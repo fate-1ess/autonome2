@@ -1,8 +1,8 @@
 import { getPortfolio } from "./getPortfolio";
-import { PrismaClient } from "../../generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
-const PORTFOLIO_INTERVAL_MS = 1000 * 60 * 2;
+const PORTFOLIO_INTERVAL_MS = 1000 * 60 * 3;
 
 export function ensurePortfolioScheduler() {
   if (globalThis.portfolioIntervalHandle) {

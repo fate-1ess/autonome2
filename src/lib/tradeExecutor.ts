@@ -6,7 +6,7 @@ import { PROMPT } from "@/lib/prompt";
 import { getPortfolio } from "@/lib/getPortfolio";
 import { getOpenPositions } from "@/lib/openPositions";
 import { fetchIndicatorData } from "@/lib/indicators";
-import { PrismaClient } from "../../generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { ToolCallType } from "../../generated/prisma/enums";
 import { createPosition } from "@/lib/createPosition";
 import { closePosition } from "@/lib/closePosition";

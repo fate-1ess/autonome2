@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "../../../../generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { getOpenPositions } from "@/lib/openPositions";
 
 const prisma = new PrismaClient();
