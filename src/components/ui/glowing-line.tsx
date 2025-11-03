@@ -18,6 +18,7 @@ import {
   ChartContainer,
 } from "@/components/ui/chart";
 import Image from "next/image";
+import { MODEL_INFO, getModelInfo } from "@/lib/modelConfig";
 
 type GlowingLineChartProps = {
   chartData: Array<{ month: string; [key: string]: number | string }>;
@@ -30,55 +31,8 @@ type GlowingLineChartProps = {
   onHoverLine?: (key: string | null) => void;
 };
 
-// Model logo URLs and colors
-const MODEL_INFO: Record<
-  string,
-  { logo: string; color: string; label: string }
-> = {
-  gpt_5: {
-    logo: "https://nof1.ai/logos_white/GPT_logo.png",
-    color: "#39B295",
-    label: "GPT 5",
-  },
-  gemini_2_5_pro: {
-    logo: "https://nof1.ai/logos_white/Gemini_logo.webp",
-    color: "#4285F4",
-    label: "Gemini 2.5 Pro",
-  },
-  grok_4: {
-    logo: "https://nof1.ai/logos_white/Grok_logo.webp",
-    color: "#000000",
-    label: "Grok 4",
-  },
-  claude_sonnet_4_5: {
-    logo: "https://nof1.ai/logos_white/Claude_logo.png",
-    color: "#FF6B35",
-    label: "Claude Sonnet 4.5",
-  },
-  deepseek_chat_v3_1: {
-    logo: "https://nof1.ai/logos_white/deepseek_logo.png",
-    color: "#4D6BFE",
-    label: "DeepSeek V3.1",
-  },
-  qwen3_max: {
-    logo: "https://nof1.ai/logos_white/qwen_logo.png",
-    color: "#8B5CF6",
-    label: "Qwen3 Max",
-  },
-};
-
 // Custom dot component for the last point with icon and value
-const CustomEndDot = (props: {
-  cx?: number;
-  cy?: number;
-  value?: number;
-  payload?: { month: string };
-  dataKey?: string;
-  chartConfig?: ChartConfig;
-  index?: number;
-  data?: Array<{ month: string; [key: string]: number | string }>;
-  hoveredLine?: string | null;
-}) => {
+const CustomEndDot = (props: any) => {
   const { cx, cy, value, dataKey, index, data, hoveredLine } = props;
 
   if (!cx || !cy || !value || !dataKey || !data) {
@@ -90,8 +44,8 @@ const CustomEndDot = (props: {
     return null;
   }
 
-  const modelInfo = MODEL_INFO[dataKey];
-  if (!modelInfo) {
+  const modelInfo = getModelInfo(String(dataKey));
+  if (!modelInfo || !modelInfo.logo) {
     return null;
   }
 
@@ -174,7 +128,7 @@ const CustomTooltip = ({
     return null;
   }
 
-  const modelInfo = MODEL_INFO[hoveredLine];
+  const modelInfo = getModelInfo(hoveredLine);
   if (!modelInfo) {
     return null;
   }
@@ -220,17 +174,20 @@ export function GlowingLineChart({
     onHoverLine?.(key);
   };
 
-  // Preload all model logos to prevent flickering
-  useEffect(() => {
-    const imageUrls = Object.values(MODEL_INFO).map(info => info.logo);
-    imageUrls.forEach(url => {
-      const img = new window.Image();
-      img.src = url;
-    });
-  }, []);
-
   // Extract all model keys dynamically from chartConfig, excluding buynnhold_btc
   const modelKeys = Object.keys(chartConfig).filter(key => key !== "buynnhold_btc");
+
+  // Preload all model logos to prevent flickering
+  useEffect(() => {
+    const modelLogos = modelKeys
+      .map((key) => getModelInfo(key).logo)
+      .filter((logo) => logo); // Filter out empty strings
+    
+    modelLogos.forEach((url) => {
+      const img = new window.Image();
+      img.src = "/deepseek.png" ;
+    });
+  }, [modelKeys]);
 
   const lastPoint = chartData.at(-1) ?? { month: "" };
 
@@ -358,7 +315,7 @@ export function GlowingLineChart({
               left: 10,
               right: 120,
               top: 10,
-              bottom: 10,
+              bottom: 60,
             }}
             onMouseLeave={() => setHoveredLine(null)}
           >
@@ -386,11 +343,15 @@ export function GlowingLineChart({
               tickLine={false}
               tickMargin={12}
               tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
+              interval={0}
+              angle={-45}
+              textAnchor="end"
+              height={80}
             />
             <YAxis
               axisLine={false}
-              domain={isPercent ? [-100, 80] : [2000, 16000]}
-              ticks={isPercent ? undefined : [4000, 6000, 8000, 10000, 12000, 14000, 16000]}
+              domain={isPercent ? [-100, 150] : [0, 200]}
+              ticks={isPercent ? [-100, -50, 0, 50, 100, 150] : [0, 50, 100, 150, 200]}
               tickFormatter={(v: number) =>
                 isPercent
                   ? `${Math.round(v)}%`
@@ -407,7 +368,7 @@ export function GlowingLineChart({
             {/* Reference line at starting value */}
             {!isPercent && (
               <ReferenceLine
-                y={10000}
+                y={0}
                 stroke="hsl(var(--muted-foreground))"
                 strokeDasharray="3 3"
                 opacity={0.5}
@@ -422,7 +383,7 @@ export function GlowingLineChart({
               }}
             />
             {modelKeys.map((key) => {
-              const modelInfo = MODEL_INFO[key];
+              const modelInfo = getModelInfo(key);
               const color = modelInfo?.color || chartConfig[key]?.color || "hsl(var(--chart-1))";
               const isHovered = hoveredLine === key;
               const isDimmed = hoveredLine && hoveredLine !== key;

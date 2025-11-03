@@ -1,3 +1,6 @@
-import { runManualCreatePosition } from "@/lib/tradeExecutor";
+import { ensureTradeScheduler } from "@/lib/tradeExecutor";
+import { ensurePortfolioScheduler } from "@/lib/priceTracker";
 
-runManualCreatePosition();
+ensurePortfolioScheduler();
+
+ensureTradeScheduler();

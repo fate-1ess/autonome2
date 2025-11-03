@@ -22,21 +22,22 @@ const config: runtime.GetPrismaClientConfig = {
       "value": "prisma-client"
     },
     "output": {
-      "value": "C:\\Users\\fateless\\Documents\\Projects\\autonome2\\generated\\prisma",
+      "value": "/home/fateless/autonome2/generated/prisma",
       "fromEnvVar": null
     },
     "config": {
+      "runtime": "bun",
       "engineType": "library"
     },
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "windows",
+        "value": "debian-openssl-3.0.x",
         "native": true
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\fateless\\Documents\\Projects\\autonome2\\prisma\\schema.prisma",
+    "sourceFilePath": "/home/fateless/autonome2/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativePath": "../../prisma",
@@ -46,7 +47,7 @@ const config: runtime.GetPrismaClientConfig = {
     "db"
   ],
   "activeProvider": "postgresql",
-  "postinstall": true,
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
@@ -55,8 +56,8 @@ const config: runtime.GetPrismaClientConfig = {
       }
     }
   },
-  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider = \"prisma-client\"\n  output   = \"../generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Models {\n  id                  String          @id @default(uuid())\n  name                String          @unique\n  openRoutermodelName String\n  lighterApiKey       String\n  invocationCount     Int             @default(0)\n  totalMinutes        Int             @default(0)\n  invocations         Invocations[]\n  portfolioSize       PortfolioSize[]\n  accountIndex        String\n\n  @@index([name])\n}\n\nmodel Invocations {\n  id        String      @id @default(uuid())\n  modelId   String\n  response  String\n  model     Models      @relation(fields: [modelId], references: [id])\n  toolCalls ToolCalls[]\n  createdAt DateTime    @default(now())\n  updatedAt DateTime    @updatedAt\n\n  @@index([modelId])\n}\n\nmodel ToolCalls {\n  id           String       @id @default(uuid())\n  invocationId String\n  toolCallType ToolCallType\n  metadata     String\n  invocation   Invocations  @relation(fields: [invocationId], references: [id])\n  createdAt    DateTime     @default(now())\n  updatedAt    DateTime     @updatedAt\n\n  @@index([invocationId])\n}\n\nmodel PortfolioSize {\n  id           String   @id @default(uuid())\n  modelId      String\n  netPortfolio String\n  createdAt    DateTime @default(now())\n  updatedAt    DateTime @updatedAt\n  model        Models   @relation(fields: [modelId], references: [id])\n\n  @@index([modelId])\n}\n\nenum ToolCallType {\n  CREATE_POSITION\n  CLOSE_POSITION\n}\n",
-  "inlineSchemaHash": "60c0f0f85ab821ccc6877f0348521d63737a84ba91081f0ad5bff8a20b67b2c6",
+  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider = \"prisma-client\"\n  output   = \"../generated/prisma\"\n  runtime  = \"bun\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Models {\n  id                  String          @id @default(uuid())\n  name                String          @unique\n  openRoutermodelName String\n  lighterApiKey       String\n  invocationCount     Int             @default(0)\n  totalMinutes        Int             @default(0)\n  invocations         Invocations[]\n  portfolioSize       PortfolioSize[]\n  accountIndex        String\n\n  @@index([name])\n}\n\nmodel Invocations {\n  id        String      @id @default(uuid())\n  modelId   String\n  response  String\n  model     Models      @relation(fields: [modelId], references: [id])\n  toolCalls ToolCalls[]\n  createdAt DateTime    @default(now())\n  updatedAt DateTime    @updatedAt\n\n  @@index([modelId])\n}\n\nmodel ToolCalls {\n  id           String       @id @default(uuid())\n  invocationId String\n  toolCallType ToolCallType\n  metadata     String\n  invocation   Invocations  @relation(fields: [invocationId], references: [id])\n  createdAt    DateTime     @default(now())\n  updatedAt    DateTime     @updatedAt\n\n  @@index([invocationId])\n}\n\nmodel PortfolioSize {\n  id           String   @id @default(uuid())\n  modelId      String\n  netPortfolio String\n  createdAt    DateTime @default(now())\n  updatedAt    DateTime @updatedAt\n  model        Models   @relation(fields: [modelId], references: [id])\n\n  @@index([modelId])\n}\n\nenum ToolCallType {\n  CREATE_POSITION\n  CLOSE_POSITION\n}\n",
+  "inlineSchemaHash": "f5b413325a31d2ba00f56157c4bff0e4aa178ddefc2bfd8a7ce865ab75ff70b8",
   "copyEngine": true,
   "runtimeDataModel": {
     "models": {},

@@ -6,7 +6,7 @@ import { MARKETS } from "./markets";
 import { getOpenPositions } from "./openPositions";
 import { CandlestickApi, IsomorphicFetchHttpLibrary, ServerConfiguration } from "../../lighter-sdk-ts/generated";
 
-export async function cancelOrder(account: Account, marketIndex: number, clientOrderIndex: number) {
+export async function closePosition(account: Account, symbols: string[]) {
     const client = await SignerClient.create({
         url: BASE_URL,
         privateKey: account.apiKey,
@@ -14,39 +14,73 @@ export async function cancelOrder(account: Account, marketIndex: number, clientO
         accountIndex: Number(account.accountIndex),
         nonceManagementType: NonceManagerType.API
     });
-    // const candleStickApi = new CandlestickApi({
-    //     baseServer: new ServerConfiguration<{  }>(BASE_URL, {  }),
-    //     httpApi: new IsomorphicFetchHttpLibrary(),
-    //     middleware: [],
-    //     authMethods: {}
-    // }); 
-    // const openPositions = await getOpenPositions(account.apiKey, account.accountIndex);
-    // openPositions?.forEach(async ({position, sign, symbol}) => {
-    //     if (Number(position) != 0) {
-    //         const candleStickData = await candleStickApi.candlesticks(MARKETS[symbol as keyof typeof MARKETS].marketId, '1m', Date.now() - 1000 * 60 * 5, Date.now(), 1, false);
-    //         const latestPrice = candleStickData.candlesticks[candleStickData.candlesticks.length - 1]?.close;
-    //         if (!latestPrice) {
-    //             throw new Error("No latest price found");
-    //         }
-    //         sign = sign == "LONG" ? "SHORT" : "LONG";
-    //         // create opposite order to close the position
-    //         await client.createOrder({
-    //             marketIndex: MARKETS[symbol as keyof typeof MARKETS].marketId,
-    //             clientOrderIndex: MARKETS[symbol as keyof typeof MARKETS].clientOrderIndex,
-    //             baseAmount: Math.abs(Number(position)) * MARKETS[symbol as keyof typeof MARKETS].qtyDecimals,
-    //             price: (sign == "LONG" ? latestPrice * 1.01 : latestPrice * 0.99) * MARKETS[symbol as keyof typeof MARKETS].priceDecimals,
-    //             isAsk: sign === "LONG" ? false : true,
-    //             orderType: SignerClient.ORDER_TYPE_MARKET,
-    //             timeInForce: SignerClient.ORDER_TIME_IN_FORCE_IMMEDIATE_OR_CANCEL,
-    //             reduceOnly: 0,
-    //             triggerPrice: SignerClient.NIL_TRIGGER_PRICE,
-    //             orderExpiry: SignerClient.DEFAULT_IOC_EXPIRY,
-    //         });
-    //     }
+    const candleStickApi = new CandlestickApi({
+        baseServer: new ServerConfiguration<{  }>(BASE_URL, {  }),
+        httpApi: new IsomorphicFetchHttpLibrary(),
+        middleware: [],
+        authMethods: {}
+    }); 
+    const openPositions = await getOpenPositions(account.apiKey, account.accountIndex);
+
+    // If no symbols provided, nothing to do
+    if (!symbols || symbols.length === 0) {
+        return;
+    }
+
+    // Process sequentially to respect nonce ordering and handle errors per position
+    for (const pos of openPositions ?? []) {
+        const { position, sign: currentSign, symbol } = pos as { position: string | number; sign: string; symbol: string };
+
+        // Only close positions for the requested symbols
+        if (!symbols.includes(symbol)) continue;
+
+        if (Number(position) === 0) continue;
+
+        try {
+            const market = MARKETS[symbol as keyof typeof MARKETS];
+            if (!market) {
+                console.warn(`Market for symbol ${symbol} not found, skipping`);
+                continue;
+            }
+
+            const candleStickData = await candleStickApi.candlesticks(market.marketId, '1m', Date.now() - 1000 * 60 * 5, Date.now(), 1, false);
+            const latestPrice = candleStickData?.candlesticks?.[candleStickData.candlesticks.length - 1]?.close;
+            if (!latestPrice) {
+                console.warn(`No latest price found for ${symbol}, skipping`);
+                continue;
+            }
+
+            const closeSign = currentSign == "LONG" ? "SHORT" : "LONG";
+
+            // create opposite order to close the position
+            await client.createOrder({
+                marketIndex: market.marketId,
+                clientOrderIndex: market.clientOrderIndex,
+                baseAmount: Math.abs(Number(position)) * market.qtyDecimals,
+                price: (closeSign == "LONG" ? latestPrice * 1.01 : latestPrice * 0.99) * market.priceDecimals,
+                isAsk: closeSign === "LONG" ? false : true,
+                orderType: SignerClient.ORDER_TYPE_MARKET,
+                timeInForce: SignerClient.ORDER_TIME_IN_FORCE_IMMEDIATE_OR_CANCEL,
+                reduceOnly: 0,
+                triggerPrice: SignerClient.NIL_TRIGGER_PRICE,
+                orderExpiry: SignerClient.DEFAULT_IOC_EXPIRY,
+            });
+        } catch (err) {
+            console.error(`Failed to close position for ${symbol}:`, err);
+            // continue with next position
+        }
+    }
+
+    // Object.values(MARKETS).forEach(async (market) => {
+    //     await client.cancelOrder(
+    //         market.marketId,
+    //         market.clientOrderIndex,
+    //     );
     // });
-    await client.cancelOrder(
-        marketIndex,
-        clientOrderIndex
-    );
+
+    // await client.cancelOrder(
+    //     marketIndex,
+    //     clientOrderIndex,
+    // );
 
 }

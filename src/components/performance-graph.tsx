@@ -1,344 +1,166 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { GlowingLineChart } from "./ui/glowing-line";
 import ModelLegend from "./model-legend";
+import { getModelInfo } from "@/lib/modelConfig";
 
 type DataPoint = {
   month: string;
   [key: string]: number | string;
 };
 
-// Note: live fetching omitted for now; DEMO_DATA renders the chart.
-
-const DEMO_DATA = [
-  {
-    month: "00:00",
-    gpt_5: 10_000,
-    claude_sonnet_4_5: 10_000,
-    gemini_2_5_pro: 10_000,
-    grok_4: 10_000,
-    deepseek_chat_v3_1: 10_000,
-    qwen3_max: 10_000,
-  },
-  {
-    month: "00:05",
-    gpt_5: 9950,
-    claude_sonnet_4_5: 10_080,
-    gemini_2_5_pro: 10_030,
-    grok_4: 10_100,
-    deepseek_chat_v3_1: 10_070,
-    qwen3_max: 10_090,
-  },
-  {
-    month: "00:10",
-    gpt_5: 9850,
-    claude_sonnet_4_5: 10_120,
-    gemini_2_5_pro: 10_090,
-    grok_4: 10_200,
-    deepseek_chat_v3_1: 10_150,
-    qwen3_max: 10_160,
-  },
-  {
-    month: "00:15",
-    gpt_5: 9700,
-    claude_sonnet_4_5: 10_300,
-    gemini_2_5_pro: 10_150,
-    grok_4: 10_400,
-    deepseek_chat_v3_1: 10_350,
-    qwen3_max: 10_280,
-  },
-  {
-    month: "00:20",
-    gpt_5: 9400,
-    claude_sonnet_4_5: 10_600,
-    gemini_2_5_pro: 10_300,
-    grok_4: 10_750,
-    deepseek_chat_v3_1: 10_800,
-    qwen3_max: 10_500,
-  },
-  {
-    month: "00:25",
-    gpt_5: 9100,
-    claude_sonnet_4_5: 11_100,
-    gemini_2_5_pro: 10_600,
-    grok_4: 11_000,
-    deepseek_chat_v3_1: 11_500,
-    qwen3_max: 10_900,
-  },
-  {
-    month: "00:30",
-    gpt_5: 8700,
-    claude_sonnet_4_5: 11_800,
-    gemini_2_5_pro: 11_000,
-    grok_4: 11_350,
-    deepseek_chat_v3_1: 12_300,
-    qwen3_max: 11_250,
-  },
-  {
-    month: "00:35",
-    gpt_5: 8300,
-    claude_sonnet_4_5: 12_250,
-    gemini_2_5_pro: 11_500,
-    grok_4: 11_800,
-    deepseek_chat_v3_1: 13_800,
-    qwen3_max: 11_700,
-  },
-  {
-    month: "00:40",
-    gpt_5: 7900,
-    claude_sonnet_4_5: 12_000,
-    gemini_2_5_pro: 10_800,
-    grok_4: 11_400,
-    deepseek_chat_v3_1: 14_000,
-    qwen3_max: 11_300,
-  },
-  {
-    month: "00:45",
-    gpt_5: 7600,
-    claude_sonnet_4_5: 11_750,
-    gemini_2_5_pro: 10_400,
-    grok_4: 11_100,
-    deepseek_chat_v3_1: 13_600,
-    qwen3_max: 11_150,
-  },
-  {
-    month: "00:50",
-    gpt_5: 7200,
-    claude_sonnet_4_5: 11_400,
-    gemini_2_5_pro: 9700,
-    grok_4: 10_700,
-    deepseek_chat_v3_1: 13_000,
-    qwen3_max: 10_900,
-  },
-  {
-    month: "00:55",
-    gpt_5: 6800,
-    claude_sonnet_4_5: 11_000,
-    gemini_2_5_pro: 9300,
-    grok_4: 10_350,
-    deepseek_chat_v3_1: 12_500,
-    qwen3_max: 10_600,
-  },
-  {
-    month: "01:00",
-    gpt_5: 6400,
-    claude_sonnet_4_5: 10_400,
-    gemini_2_5_pro: 8700,
-    grok_4: 10_000,
-    deepseek_chat_v3_1: 11_800,
-    qwen3_max: 10_200,
-  },
-  {
-    month: "01:05",
-    gpt_5: 6000,
-    claude_sonnet_4_5: 9700,
-    gemini_2_5_pro: 8300,
-    grok_4: 9500,
-    deepseek_chat_v3_1: 11_000,
-    qwen3_max: 9700,
-  },
-  {
-    month: "01:10",
-    gpt_5: 5700,
-    claude_sonnet_4_5: 9400,
-    gemini_2_5_pro: 7800,
-    grok_4: 9100,
-    deepseek_chat_v3_1: 10_600,
-    qwen3_max: 9400,
-  },
-  {
-    month: "01:15",
-    gpt_5: 5200,
-    claude_sonnet_4_5: 9100,
-    gemini_2_5_pro: 7400,
-    grok_4: 8700,
-    deepseek_chat_v3_1: 10_200,
-    qwen3_max: 9100,
-  },
-  {
-    month: "01:20",
-    gpt_5: 5000,
-    claude_sonnet_4_5: 8700,
-    gemini_2_5_pro: 7000,
-    grok_4: 8500,
-    deepseek_chat_v3_1: 10_000,
-    qwen3_max: 8900,
-  },
-  {
-    month: "01:25",
-    gpt_5: 4700,
-    claude_sonnet_4_5: 8500,
-    gemini_2_5_pro: 6800,
-    grok_4: 8200,
-    deepseek_chat_v3_1: 9800,
-    qwen3_max: 8600,
-  },
-  {
-    month: "01:30",
-    gpt_5: 4400,
-    claude_sonnet_4_5: 8300,
-    gemini_2_5_pro: 6500,
-    grok_4: 7900,
-    deepseek_chat_v3_1: 9600,
-    qwen3_max: 8300,
-  },
-  {
-    month: "01:35",
-    gpt_5: 4200,
-    claude_sonnet_4_5: 8100,
-    gemini_2_5_pro: 6200,
-    grok_4: 7700,
-    deepseek_chat_v3_1: 9400,
-    qwen3_max: 8100,
-  },
-  {
-    month: "01:40",
-    gpt_5: 4000,
-    claude_sonnet_4_5: 8000,
-    gemini_2_5_pro: 6000,
-    grok_4: 7500,
-    deepseek_chat_v3_1: 9300,
-    qwen3_max: 7900,
-  },
-  {
-    month: "01:45",
-    gpt_5: 3800,
-    claude_sonnet_4_5: 7950,
-    gemini_2_5_pro: 5800,
-    grok_4: 7400,
-    deepseek_chat_v3_1: 9200,
-    qwen3_max: 7800,
-  },
-  {
-    month: "01:50",
-    gpt_5: 3600,
-    claude_sonnet_4_5: 7920,
-    gemini_2_5_pro: 5600,
-    grok_4: 7300,
-    deepseek_chat_v3_1: 9100,
-    qwen3_max: 7700,
-  },
-  {
-    month: "01:55",
-    gpt_5: 3400,
-    claude_sonnet_4_5: 7999,
-    gemini_2_5_pro: 4788,
-    grok_4: 8538,
-    deepseek_chat_v3_1: 9985,
-    qwen3_max: 9478,
-  },
-];
+type PortfolioEntry = {
+  id: string;
+  modelId: string;
+  netPortfolio: string;
+  createdAt: string;
+  updatedAt: string;
+  model: {
+    name: string;
+    openRoutermodelName: string;
+  };
+};
 
 export default function PerformanceGraph() {
   const [valueMode, setValueMode] = useState<"usd" | "percent">("usd");
   const [timeFilter, setTimeFilter] = useState<"all" | "72h">("all");
   const [hoveredLine, setHoveredLine] = useState<string | null>(null);
+  const [portfolioData, setPortfolioData] = useState<PortfolioEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Filter data based on time filter (72H = last 3 data points for demo)
-  const filteredData = timeFilter === "72h"
-    ? DEMO_DATA.slice(-3)
-    : DEMO_DATA;
+  // Fetch portfolio history
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/portfolio-history");
+        const data = await response.json();
+        setPortfolioData(data);
+        setLoading(false);
+      } catch (error) {
+        console.error("Failed to fetch portfolio history:", error);
+        setLoading(false);
+      }
+    };
 
-  const chartData: DataPoint[] = filteredData;
+    fetchData();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-  // useEffect(() => {
-  //   const fetchAndStore = async () => {
-  //     try {
-  //       const response = await fetch(
-  //         "https://nof1.ai/api/account-totals?lastHourlyMarker=115"
-  //       );
-  //       const data: ApiResponse = await response.json();
+  // Transform portfolio data into chart format
+  const { chartData, chartConfig } = useMemo(() => {
+    if (!Array.isArray(portfolioData) || portfolioData.length === 0) {
+      return { chartData: [], chartConfig: {} };
+    }
 
-  //       const timestamp = new Date(data.serverTime).toLocaleTimeString(
-  //         "en-US",
-  //         {
-  //           hour: "2-digit",
-  //           minute: "2-digit",
-  //         }
-  //       );
+    // Group data points by timestamp
+    const points = portfolioData
+      .map((item) => ({
+        t: new Date(item.createdAt).getTime(),
+        name: item.model.name,
+        v: Number(item.netPortfolio),
+      }))
+      .filter((p) => Number.isFinite(p.v))
+      .sort((a, b) => a.t - b.t);
 
-  //       // Create data point with all models
-  //       const dataPoint: DataPoint = {
-  //         month: timestamp,
-  //       };
+    // Get unique model names
+    const modelNames = new Set<string>();
+    for (const p of points) modelNames.add(p.name);
 
-  //       // Add each model's equity to the data point
-  //       for (const account of data.accountTotals) {
-  //         const modelKey = account.model_id.replace(/-/g, "_"); // Replace hyphens for valid keys
-  //         dataPoint[modelKey] = account.dollar_equity;
-  //       }
+    // Calculate median time gap between data points
+    const uniqueTs = Array.from(new Set(points.map((p) => p.t))).sort(
+      (a, b) => a - b
+    );
+    const gaps: number[] = [];
+    for (let i = 1; i < uniqueTs.length; i++) {
+      gaps.push(uniqueTs[i] - uniqueTs[i - 1]);
+    }
+    const medianGap =
+      gaps.length > 0
+        ? gaps.sort((a, b) => a - b)[Math.floor(gaps.length / 2)]
+        : 60_000;
+    // Reduce tolerance to 30 seconds to show more data points
+    const tolerance = Math.min(
+      30_000, // Max 30 seconds
+      Math.max(2_000, Math.floor((medianGap || 60_000) * 0.5)) // Min 2 seconds, 50% of median
+    );
 
-  //       // biome-ignore lint: debugging
-  //       console.log("Data point:", dataPoint);
-  //       // biome-ignore lint: debugging
-  //       console.log(
-  //         "Available models in response:",
-  //         data.accountTotals.map((a) => a.model_id)
-  //       );
+    // Bucket data points that are close together
+    const rows: DataPoint[] = [];
+    let bucketStart = points[0].t;
+    let bucketEnd = points[0].t;
+    let bucketRows: Record<string, number> = {};
 
-  //       setChartData((prev) => {
-  //         const updated = [...prev, dataPoint];
-  //         // Keep last 50 data points for good visibility
-  //         return updated.slice(-MAX_DATA_POINTS);
-  //       });
+    const flush = () => {
+      const center = Math.round((bucketStart + bucketEnd) / 2);
+      const timestamp = new Date(center).toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      rows.push({ month: timestamp, ...bucketRows });
+      bucketRows = {};
+    };
 
-  //       setLoading(false);
-  //     } catch (error) {
-  //       // biome-ignore lint: debugging
-  //       console.error("Failed to fetch performance data:", error);
-  //       setLoading(false);
-  //     }
-  //   };
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i];
+      if (p.t - bucketEnd > tolerance) {
+        flush();
+        bucketStart = p.t;
+        bucketEnd = p.t;
+      }
+      bucketEnd = Math.max(bucketEnd, p.t);
+      bucketRows[p.name] = p.v;
+    }
+    flush();
 
-  //   fetchAndStore(); // Initial fetch
-  //   const interval = setInterval(fetchAndStore, FETCH_INTERVAL);
+    // Create chart config with colors
+    const config: Record<string, { label: string; color: string }> = {};
+    for (const name of Array.from(modelNames)) {
+      const modelInfo = getModelInfo(name);
+      config[name] = {
+        label: modelInfo.label,
+        color: modelInfo.color,
+      };
+    }
 
-  //   return () => clearInterval(interval);
-  // }, []);
+    return { chartData: rows, chartConfig: config };
+  }, [portfolioData]);
 
-  // Dynamic chart config based on models - using exact colors from MODEL_INFO
-  const chartConfig = {
-    gpt_5: {
-      label: "GPT 5",
-      color: "#39B295",
-    },
-    claude_sonnet_4_5: {
-      label: "Claude Sonnet 4.5",
-      color: "#FF6B35",
-    },
-    gemini_2_5_pro: {
-      label: "Gemini 2.5 Pro",
-      color: "#4285F4",
-    },
-    grok_4: {
-      label: "Grok 4",
-      color: "#000000",
-    },
-    deepseek_chat_v3_1: {
-      label: "DeepSeek V3.1",
-      color: "#4D6BFE",
-    },
-    qwen3_max: {
-      label: "Qwen3 Max",
-      color: "#8B5CF6",
-    },
-  };
+  // Filter data based on time filter
+  const filteredData = useMemo(() => {
+    if (timeFilter === "72h") {
+      // Get data from last 72 hours
+      const cutoffTime = Date.now() - 72 * 60 * 60 * 1000;
+      return chartData.filter((point) => {
+        const time = new Date(
+          new Date().toDateString() + " " + point.month
+        ).getTime();
+        return time >= cutoffTime || isNaN(time);
+      });
+    }
+    return chartData;
+  }, [chartData, timeFilter]);
 
   // Compute display data based on value mode (USD vs % from first point)
   const PERCENT_SCALE = 100;
 
   const toPercentData = (source: DataPoint[]): DataPoint[] => {
-    const first = source.at(0);
-    if (!first) {
-      return source;
-    }
+    if (source.length === 0) return source;
+    
     const keys = Object.keys(chartConfig);
+    
+    // Find the first data point where each model appears
     const baseMap: Record<string, number> = {};
     for (const k of keys) {
-      const baseVal = first[k];
-      if (typeof baseVal === "number" && baseVal) {
-        baseMap[k] = baseVal;
+      // Find first non-zero value for this model
+      for (const row of source) {
+        const val = row[k];
+        if (typeof val === "number" && val > 0) {
+          baseMap[k] = val;
+          break;
+        }
       }
     }
 
@@ -347,7 +169,7 @@ export default function PerformanceGraph() {
       for (const k of keys) {
         const base = baseMap[k];
         const val = row[k];
-        if (typeof base === "number" && typeof val === "number") {
+        if (typeof base === "number" && base > 0 && typeof val === "number" && val > 0) {
           out[k] = (val / base - 1) * PERCENT_SCALE;
         }
       }
@@ -357,12 +179,20 @@ export default function PerformanceGraph() {
     return source.map(toPoint);
   };
 
-  const displayData: DataPoint[] = (() => {
+  const displayData: DataPoint[] = useMemo(() => {
     if (valueMode === "usd") {
-      return chartData;
+      return filteredData;
     }
-    return toPercentData(chartData);
-  })();
+    return toPercentData(filteredData);
+  }, [valueMode, filteredData, chartConfig]);
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <p className="text-muted-foreground">Loading performance data...</p>
+      </div>
+    );
+  }
 
   if (chartData.length === 0) {
     return (

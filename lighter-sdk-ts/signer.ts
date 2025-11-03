@@ -1,6 +1,7 @@
 import { read, dlopen, FFIType, suffix, ptr, CString, toArrayBuffer } from 'bun:ffi';
 import * as os from 'os';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import {
     NonceManager,
     nonceManagerFactory,
@@ -44,8 +45,26 @@ interface SignerLibrary {
 function initializeSigner(): SignerLibrary {
     const platform = os.platform();
     const arch = os.arch();
-    const currentDir = __dirname;
+    
+    // Fallback: try multiple path resolution methods
+    let currentDir: string;
+    try {
+        // @ts-ignore - import.meta.url is available in Bun
+        const currentFileUrl = import.meta.url;
+        const currentFilePath = currentFileUrl.startsWith('file://') 
+            ? fileURLToPath(currentFileUrl)
+            : currentFileUrl;
+        currentDir = path.dirname(currentFilePath);
+    } catch {
+        // Fallback to hardcoded path for development
+        currentDir = '/home/fateless/autonome2/lighter-sdk-ts';
+    }
+    
     const signerPath = path.join(currentDir, 'signers');
+
+    console.log('[SIGNER DEBUG] Platform:', platform, 'Arch:', arch);
+    console.log('[SIGNER DEBUG] currentDir:', currentDir);
+    console.log('[SIGNER DEBUG] signerPath:', signerPath);
 
     let libPath: string;
 
@@ -62,6 +81,19 @@ function initializeSigner(): SignerLibrary {
             `Unsupported platform/architecture: ${platform}/${arch}. ` +
             'Currently supported: Linux(x86_64), macOS(arm64), and Windows(x86_64).'
         );
+    }
+
+    console.log('[SIGNER DEBUG] Attempting to load library from:', libPath);
+    
+    // Check if file exists
+    try {
+        const fs = require('fs');
+        if (!fs.existsSync(libPath)) {
+            throw new SignerError(`Library file does not exist at path: ${libPath}`);
+        }
+        console.log('[SIGNER DEBUG] Library file exists');
+    } catch (err) {
+        console.error('[SIGNER DEBUG] File check error:', err);
     }
 
     return dlopen(libPath, {
@@ -384,6 +416,7 @@ export class SignerClient {
             console.log(error);
             // Acknowledge failure to decrement nonce if using optimistic nonce manager
             this.nonceManager.acknowledgeFailure(apiKeyIndex);
+            throw error;
         }
     }
 

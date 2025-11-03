@@ -16,6 +16,8 @@ interface IndicatorData {
 const minutesPattern = /It has been\s+\d+\s+minutes since you started trading\.\s*/i;
 const invokedPattern = /\s*and you've been invoked\s+\d+\s+times(?=\.)/i;
 const currentTimePattern = /The current time is\s+([^\.\n]+)(?:\.)?/i;
+// Strip any leading numeric prefix like "807376. " or "434033. " that can appear before sentences.
+const numberPrefixPattern = /^\s*\d+\.\s+/;
 const accountSectionPattern = new RegExp(
   `${ACCOUNT_SECTION_HEADER.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[\s\S]*$`,
   "i",
@@ -57,6 +59,9 @@ function extractIndicatorData(prompt: string): IndicatorData {
   if (currentTimeMatch) {
     cleaned = cleaned.replace(currentTimeMatch[0], "").trim();
   }
+
+  // Remove number prefix after other replacements
+  cleaned = cleaned.replace(numberPrefixPattern, "").trim();
 
   const sectionMatches = [...cleaned.matchAll(/### [^\n]+\n/g)];
 

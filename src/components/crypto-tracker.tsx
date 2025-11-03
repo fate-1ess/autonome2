@@ -21,7 +21,11 @@ export default function CryptoTracker() {
         const response = await fetch(`${holy_link}/api/crypto-prices`);
         const data = await response.json();
         const cryptoArray = Object.values(data.prices) as CryptoPrice[];
-        setCrypto(cryptoArray);
+        // Filter to only show BTC, ETH, and SOL
+        const filteredCrypto = cryptoArray.filter(coin => 
+          ['BTC', 'ETH', 'SOL'].includes(coin.symbol)
+        );
+        setCrypto(filteredCrypto);
       } catch (_error) {
         // Failed to fetch crypto prices
       }

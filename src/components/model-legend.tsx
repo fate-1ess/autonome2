@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { getModelInfo } from "@/lib/modelConfig";
 
 type ModelLegendProps = {
   chartData: Array<{ month: string; [key: string]: number | string }>;
@@ -9,43 +10,6 @@ type ModelLegendProps = {
   valueMode?: "usd" | "percent";
   hoveredLine: string | null;
   onHoverLine: (key: string | null) => void;
-};
-
-// Model logo URLs and colors
-const MODEL_INFO: Record<
-  string,
-  { logo: string; color: string; label: string }
-> = {
-  gpt_5: {
-    logo: "https://nof1.ai/logos_white/GPT_logo.png",
-    color: "#39B295",
-    label: "GPT 5",
-  },
-  gemini_2_5_pro: {
-    logo: "https://nof1.ai/logos_white/Gemini_logo.webp",
-    color: "#4285F4",
-    label: "Gemini 2.5 Pro",
-  },
-  grok_4: {
-    logo: "https://nof1.ai/logos_white/Grok_logo.webp",
-    color: "#000000",
-    label: "Grok 4",
-  },
-  claude_sonnet_4_5: {
-    logo: "https://nof1.ai/logos_white/Claude_logo.png",
-    color: "#FF6B35",
-    label: "Claude Sonnet 4.5",
-  },
-  deepseek_chat_v3_1: {
-    logo: "https://nof1.ai/logos_white/deepseek_logo.png",
-    color: "#4D6BFE",
-    label: "DeepSeek V3.1",
-  },
-  qwen3_max: {
-    logo: "https://nof1.ai/logos_white/qwen_logo.png",
-    color: "#8B5CF6",
-    label: "Qwen3 Max",
-  },
 };
 
 export default function ModelLegend({
@@ -65,8 +29,11 @@ export default function ModelLegend({
 
   // Preload all model logos
   useEffect(() => {
-    const imageUrls = Object.values(MODEL_INFO).map(info => info.logo);
-    const imagePromises = imageUrls.map(url => {
+    const modelLogos = modelKeys
+      .map((key) => getModelInfo(key).logo)
+      .filter((logo) => logo); // Filter out empty strings
+    
+    const imagePromises = modelLogos.map((url) => {
       return new Promise((resolve, reject) => {
         const img = new window.Image();
         img.onload = resolve;
@@ -78,7 +45,7 @@ export default function ModelLegend({
     Promise.all(imagePromises)
       .then(() => setImagesLoaded(true))
       .catch(() => setImagesLoaded(true));
-  }, []);
+  }, [modelKeys]);
 
   const formatValue = (v?: number): string => {
     if (typeof v !== "number") {
@@ -106,7 +73,7 @@ export default function ModelLegend({
     <div className="border-t px-6 py-4">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6">
         {sortedModelKeys.map((key) => {
-          const modelInfo = MODEL_INFO[key];
+          const modelInfo = getModelInfo(key);
           const color =
             modelInfo?.color ||
             chartConfig[key]?.color ||
@@ -144,15 +111,15 @@ export default function ModelLegend({
                       alignItems: "center",
                       justifyContent: "center",
                       overflow: "hidden",
+                      flexShrink: 0,
                     }}
                   >
                     <Image
-                      src={String(logo)}
+                      src={logo}
                       alt={String(label)}
-                      width={20}
-                      height={20}
-                      style={{ objectFit: "cover", display: imagesLoaded ? "block" : "none" }}
-                      priority
+                      width={16}
+                      height={16}
+                      style={{objectFit:"contain", display: imagesLoaded ? "block" : "none" }}
                       unoptimized
                     />
                   </div>
