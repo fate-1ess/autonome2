@@ -6,8 +6,11 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
-  runtime = "bun"
+  // Output directly into node_modules so imports of "@prisma/client" resolve correctly
+  // Generate into node_modules/.prisma so @prisma/client imports are forwarded correctly
+  output   = "../node_modules/.prisma/client"
+  // Use Node runtime for Next.js server builds
+  runtime = "node"
 }
 
 datasource db {

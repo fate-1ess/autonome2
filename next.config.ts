@@ -10,6 +10,24 @@ const nextConfig: NextConfig = {
     ],
    },
 	typedRoutes: true,
+  serverExternalPackages: ['lighter-sdk-ts'],
+  webpack: (config, { isServer }) => {
+    // Exclude the SDK from webpack bundling since it uses Bun-specific APIs
+    config.externals = config.externals || [];
+    if (isServer) {
+      config.externals.push({
+        'bun:ffi': 'commonjs bun:ffi',
+      });
+    } else {
+      // On client side, completely ignore the signer module
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '../../lighter-sdk-ts/signer': false,
+        '../lighter-sdk-ts/signer': false,
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

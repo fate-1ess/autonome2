@@ -33,12 +33,14 @@ async function calculatePerformanceMetrics(account: Account, currentPortfolioVal
     orderBy: { createdAt: "asc" },
   });
 
+  // Need at least 2 points for any calculation
   if (portfolioHistory.length < 2)
-    return { sharpeRatio: "N/A", totalReturnPercent: "N/A" };
+    return { sharpeRatio: "N/A (need more data)", totalReturnPercent: "N/A" };
 
   const initialValue = parseFloat(portfolioHistory[0].netPortfolio) || INITIAL_CAPITAL;
   const totalReturn = ((currentPortfolioValue - initialValue) / initialValue) * 100;
 
+  // Calculate period-over-period returns
   const returns: number[] = [];
   for (let i = 1; i < portfolioHistory.length; i++) {
     const prevValue = parseFloat(portfolioHistory[i - 1].netPortfolio);
@@ -47,17 +49,28 @@ async function calculatePerformanceMetrics(account: Account, currentPortfolioVal
   }
 
   if (returns.length < 2)
-    return { sharpeRatio: "N/A", totalReturnPercent: `${totalReturn.toFixed(2)}%` };
+    return { sharpeRatio: "N/A (need more data)", totalReturnPercent: `${totalReturn.toFixed(2)}%` };
 
   const meanReturn = returns.reduce((s, r) => s + r, 0) / returns.length;
   const variance = returns.reduce((s, r) => s + (r - meanReturn) ** 2, 0) / (returns.length - 1);
   const stdDev = Math.sqrt(variance);
-  if (stdDev === 0)
-    return { sharpeRatio: "N/A", totalReturnPercent: `${totalReturn.toFixed(2)}%` };
+  
+  // Need minimum data points for meaningful Sharpe ratio
+  if (stdDev === 0 || returns.length < 30)
+    return { sharpeRatio: "N/A (insufficient data)", totalReturnPercent: `${totalReturn.toFixed(2)}%` };
 
+  // Each period is 3 minutes, so there are 175,200 periods per year
   const periodsPerYear = (365 * 24 * 60) / 3;
+  
+  // Annualize returns using geometric mean (more accurate for compounding)
   const annualizedReturn = Math.pow(1 + meanReturn, periodsPerYear) - 1;
   const annualizedStdDev = stdDev * Math.sqrt(periodsPerYear);
+  
+  // Avoid extreme values from near-zero volatility
+  if (annualizedStdDev < 0.0001) {
+    return { sharpeRatio: "N/A (low volatility)", totalReturnPercent: `${totalReturn.toFixed(2)}%` };
+  }
+  
   const sharpeRatio = (annualizedReturn - RISK_FREE_RATE) / annualizedStdDev;
 
   return {

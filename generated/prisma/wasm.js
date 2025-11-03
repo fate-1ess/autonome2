@@ -162,7 +162,7 @@ const config = {
       "fromEnvVar": null
     },
     "config": {
-      "runtime": "bun",
+      "runtime": "node",
       "engineType": "library"
     },
     "binaryTargets": [
@@ -177,7 +177,7 @@ const config = {
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": "../../.env",
+    "rootEnvPath": null,
     "schemaEnvPath": "../../.env"
   },
   "relativePath": "../../prisma",
@@ -196,8 +196,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../generated/prisma\"\n  runtime  = \"bun\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Models {\n  id                  String          @id @default(uuid())\n  name                String          @unique\n  openRoutermodelName String\n  lighterApiKey       String\n  invocationCount     Int             @default(0)\n  totalMinutes        Int             @default(0)\n  invocations         Invocations[]\n  portfolioSize       PortfolioSize[]\n  accountIndex        String\n\n  @@index([name])\n}\n\nmodel Invocations {\n  id        String      @id @default(uuid())\n  modelId   String\n  response  String\n  model     Models      @relation(fields: [modelId], references: [id])\n  toolCalls ToolCalls[]\n  createdAt DateTime    @default(now())\n  updatedAt DateTime    @updatedAt\n\n  @@index([modelId])\n}\n\nmodel ToolCalls {\n  id           String       @id @default(uuid())\n  invocationId String\n  toolCallType ToolCallType\n  metadata     String\n  invocation   Invocations  @relation(fields: [invocationId], references: [id])\n  createdAt    DateTime     @default(now())\n  updatedAt    DateTime     @updatedAt\n\n  @@index([invocationId])\n}\n\nmodel PortfolioSize {\n  id           String   @id @default(uuid())\n  modelId      String\n  netPortfolio String\n  createdAt    DateTime @default(now())\n  updatedAt    DateTime @updatedAt\n  model        Models   @relation(fields: [modelId], references: [id])\n\n  @@index([modelId])\n}\n\nenum ToolCallType {\n  CREATE_POSITION\n  CLOSE_POSITION\n}\n",
-  "inlineSchemaHash": "37bd2fc917824e3146803d47fc0a9ce3c48e96aa042d4542611487f3bff6b07e",
+  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../generated/prisma\"\n  // Use Node runtime for Next.js server builds\n  runtime  = \"node\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Models {\n  id                  String          @id @default(uuid())\n  name                String          @unique\n  openRoutermodelName String\n  lighterApiKey       String\n  invocationCount     Int             @default(0)\n  totalMinutes        Int             @default(0)\n  invocations         Invocations[]\n  portfolioSize       PortfolioSize[]\n  accountIndex        String\n\n  @@index([name])\n}\n\nmodel Invocations {\n  id        String      @id @default(uuid())\n  modelId   String\n  response  String\n  model     Models      @relation(fields: [modelId], references: [id])\n  toolCalls ToolCalls[]\n  createdAt DateTime    @default(now())\n  updatedAt DateTime    @updatedAt\n\n  @@index([modelId])\n}\n\nmodel ToolCalls {\n  id           String       @id @default(uuid())\n  invocationId String\n  toolCallType ToolCallType\n  metadata     String\n  invocation   Invocations  @relation(fields: [invocationId], references: [id])\n  createdAt    DateTime     @default(now())\n  updatedAt    DateTime     @updatedAt\n\n  @@index([invocationId])\n}\n\nmodel PortfolioSize {\n  id           String   @id @default(uuid())\n  modelId      String\n  netPortfolio String\n  createdAt    DateTime @default(now())\n  updatedAt    DateTime @updatedAt\n  model        Models   @relation(fields: [modelId], references: [id])\n\n  @@index([modelId])\n}\n\nenum ToolCallType {\n  CREATE_POSITION\n  CLOSE_POSITION\n}\n",
+  "inlineSchemaHash": "98f25a7510166ff0510c008a019562a829de17b8c6cec844404d025cf2a58c47",
   "copyEngine": true
 }
 config.dirname = '/'

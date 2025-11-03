@@ -8,7 +8,7 @@ import {
     NonceManagerType,
     OptimisticNonceManager
 } from './nonce_manager';
-import { StrOrErr, SignResult, type CreateOrderParams, type CreateOrderResponse, TxResponse } from './types';
+import { StrOrErr, SignResult, type CreateOrderParams, TxResponse } from './types';
 import { ValidationError, SignerError } from './errors';
 import { TransactionApi, AccountApi, ServerConfiguration, IsomorphicFetchHttpLibrary, ApiKeyAuthentication, OrderApi, RespSendTx } from './generated';
 import { Configuration } from './generated/configuration';
@@ -23,22 +23,10 @@ const StrOrErrStruct = {
 
 interface SignerLibrary {
     symbols: {
-        CreateClient: {
-            args: [FFIType.cstring, FFIType.cstring, FFIType.i32, FFIType.i32, FFIType.i64];
-            returns: FFIType.cstring;
-        };
-        SignCreateOrder: {
-            args: [FFIType.i32, FFIType.i64, FFIType.i64, FFIType.i32, FFIType.i32, FFIType.i32, FFIType.i32, FFIType.i32, FFIType.i32, FFIType.i64, FFIType.i64];
-            returns: FFIType.ptr;
-        };
-        SignCancelAllOrders: {
-            args: [FFIType.i32, FFIType.i64, FFIType.i64];
-            returns: FFIType.ptr
-        };
-        SignCancelOrder: {
-            args: [FFIType.i32, FFIType.i64, FFIType.i64];
-            returns: FFIType.ptr
-        };
+        CreateClient: (url: any, privateKey: any, chainId: number, apiKeyIndex: number, accountIndex: number) => string;
+        SignCreateOrder: (marketIndex: number, clientOrderIndex: number, baseAmount: number, price: number, isAsk: number, orderType: number, timeInForce: number, reduceOnly: number, triggerPrice: number, orderExpiry: number, nonce: number) => number;
+        SignCancelAllOrders: (timeInForce: number, time: number, nonce: number) => number;
+        SignCancelOrder: (marketIndex: number, clientOrderIndex: number, nonce: number) => number;
     };
 }
 
