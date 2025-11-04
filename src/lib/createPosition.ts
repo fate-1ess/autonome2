@@ -67,8 +67,8 @@ export async function createPosition(account: Account, positions: PositionReques
             const response = await client.createOrder({
                 marketIndex: market.marketId,
                 clientOrderIndex: market.clientOrderIndex,
-                baseAmount: quantity * market.qtyDecimals,
-                price: (side == "LONG" ? latestPrice * 1.01 : latestPrice * 0.99) * market.priceDecimals,
+                baseAmount: Math.round(quantity * market.qtyDecimals),
+                price: Math.round((side == "LONG" ? latestPrice * 1.01 : latestPrice * 0.99) * market.priceDecimals),
                 isAsk: side == "LONG" ? false : true,
                 orderType: SignerClient.ORDER_TYPE_MARKET,
                 timeInForce: SignerClient.ORDER_TIME_IN_FORCE_IMMEDIATE_OR_CANCEL,

@@ -1,6 +1,6 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import type { Account } from "@/lib/accounts";
-import { generateText, tool } from "ai";
+import { generateText, stepCountIs, tool } from "ai";
 import z from "zod";
 import { PROMPT } from "@/lib/prompt";
 import { getPortfolio } from "@/lib/getPortfolio";
@@ -24,6 +24,7 @@ declare global {
 }
 
 const TRADE_INTERVAL_MS = 3 * 60 * 1000;
+const MODEL_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes max per model
 const INITIAL_CAPITAL = 10000; // Starting capital in USD
 const RISK_FREE_RATE = 0.04; // 4% annual risk-free rate
 
@@ -134,6 +135,7 @@ export async function runTradeWorkflow(account: Account) {
   const result = await generateText({
     model: openrouter(account.modelName),
     prompt: enrichedPrompt,
+    stopWhen: stepCountIs(5),
     tools: {
       createPosition: tool({
         description: "Open one or more positions in the given markets",
