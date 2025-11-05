@@ -28,6 +28,16 @@ export const MODEL_INFO: Record<
     color: "#8B5CF6",
     label: "Qwen3 Max",
   },
+  "glm-4.5-air": {
+    logo: "/glm.png",
+    color: "#343333",
+    label: "GLM 4.5 Air",
+  },
+  "minimax-m2": {
+    logo: "/minimax.png",
+    color: "#E62176",
+    label: "Minimax M2",
+  }
 };
 
 // Get model info with fallback for unknown models

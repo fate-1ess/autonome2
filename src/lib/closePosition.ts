@@ -1,12 +1,24 @@
-import { API_KEY_INDEX, BASE_URL } from "./config";
+import { API_KEY_INDEX, BASE_URL, DEFAULT_SIMULATOR_OPTIONS, IS_SIMULATION_ENABLED } from "./config";
 import { NonceManagerType } from "../../lighter-sdk-ts/nonce_manager";
 import { SignerClient } from "../../lighter-sdk-ts/signer";
 import type { Account } from "./accounts";
 import { MARKETS } from "./markets";
 import { getOpenPositions } from "./openPositions";
 import { CandlestickApi, IsomorphicFetchHttpLibrary, ServerConfiguration } from "../../lighter-sdk-ts/generated";
+import { ExchangeSimulator } from "./simulator/exchangeSimulator";
 
 export async function closePosition(account: Account, symbols: string[]) {
+    if (!symbols || symbols.length === 0) {
+        return;
+    }
+
+    if (IS_SIMULATION_ENABLED) {
+        const simulator = await ExchangeSimulator.bootstrap(DEFAULT_SIMULATOR_OPTIONS);
+        const accountId = account.id || "default";
+        await simulator.closePositions(symbols, accountId);
+        return;
+    }
+
     const client = await SignerClient.create({
         url: BASE_URL,
         privateKey: account.apiKey,
@@ -20,12 +32,7 @@ export async function closePosition(account: Account, symbols: string[]) {
         middleware: [],
         authMethods: {}
     }); 
-    const openPositions = await getOpenPositions(account.apiKey, account.accountIndex);
-
-    // If no symbols provided, nothing to do
-    if (!symbols || symbols.length === 0) {
-        return;
-    }
+    const openPositions = await getOpenPositions(account.apiKey, account.accountIndex, account.id || "default");
 
     // Process sequentially to respect nonce ordering and handle errors per position
     for (const pos of openPositions ?? []) {

@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 import { NumberTicker } from "./ui/number-ticker";
 
 const holy_link = "https://nof1.ai";
-const UPDATE_INTERVAL = 30_000; // 10 seconds
+const UPDATE_INTERVAL = 30_000; 
 
 type CryptoPrice = {
   symbol: string;
@@ -48,6 +48,7 @@ export default function CryptoTracker() {
                 height={16}
                 src={`${holy_link}/coins/${coin.symbol.toLowerCase()}.svg`}
                 width={16}
+                style={{ height: "auto" }}
               />
               <p className="text-muted-foreground text-sm">{coin.symbol}</p>
             </div>

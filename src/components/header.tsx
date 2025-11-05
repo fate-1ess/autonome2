@@ -38,7 +38,7 @@ export default function Header({ isSidebarExpanded, onToggleSidebar }: HeaderPro
   return (
     <div className="flex items-center justify-between border-b px-6 py-4">
       <div className="flex items-center gap-3">
-        <Image alt="Autonome logo" height={32} src="/logo.png" width={32} />
+  <Image alt="Autonome logo" height={32} src="/logo.png" width={32} style={{ height: "auto" }} />
         <div className="text-lg font-mono tracking-wider text-muted-foreground">
           AutonoMe
         </div>

@@ -206,33 +206,27 @@ export function GlowingLineChart({
         }).format(v);
   };
 
-  // Calculate Y-axis domain
-  const allValues: number[] = [];
-  chartData.forEach((point) => {
-    modelKeys.forEach((key) => {
-      const val = point[key];
-      if (typeof val === "number") {
-        allValues.push(val);
+  // Fixed Y-axis domain for USD mode, dynamic for percent mode
+  const yAxisConfig = isPercent 
+    ? {
+        domain: [-100, 150] as [number, number],
+        ticks: [-100, -50, 0, 50, 100, 150]
       }
-    });
-  });
-
-  const minValue = Math.min(...allValues);
-  const maxValue = Math.max(...allValues);
-  const padding = (maxValue - minValue) * 0.1;
-  const yMin = Math.floor((minValue - padding) / 1000) * 1000;
-  const yMax = Math.ceil((maxValue + padding) / 1000) * 1000;
+    : {
+        domain: [0, 25000] as [number, number],
+        ticks: [0, 5000, 10000, 15000, 20000, 25000]
+      };
 
 
 
   return (
     <div className="flex h-full flex-col">
-      <div className="px-6 py-4">
+      <div className="px-6 py-4 border-b">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1">
             <Button
               aria-pressed={valueMode === "usd"}
-              className="h-8 px-3 text-xs"
+              className="h-8 px-3 text-xs font-medium transition-all"
               onClick={() => onValueModeChange?.("usd")}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -246,7 +240,7 @@ export function GlowingLineChart({
             </Button>
             <Button
               aria-pressed={valueMode === "percent"}
-              className="h-8 px-3 text-xs"
+              className="h-8 px-3 text-xs font-medium transition-all"
               onClick={() => onValueModeChange?.("percent")}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -259,17 +253,17 @@ export function GlowingLineChart({
               %
             </Button>
           </div>
-          <div>
-            <div className="flex justify-around items-center gap-2">
-              <h2 className="text-sm font-medium uppercase tracking-wide">
+          <div className="text-center">
+            <div className="flex justify-center items-center gap-2">
+              <h2 className="text-sm font-semibold uppercase tracking-wider">
                 TOTAL ACCOUNT VALUE
               </h2>
               <Badge
-                className="border-none bg-green-500/10 text-green-500"
+                className="border-none bg-green-500/10 text-green-500 hover:bg-green-500/20 transition-colors"
                 variant="outline"
               >
-                <TrendingUp className="h-4 w-4" />
-                <span>Live</span>
+                <TrendingUp className="h-3.5 w-3.5 mr-1" />
+                <span className="font-semibold">Live</span>
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-1">Real-time model equity tracking</p>
@@ -277,7 +271,7 @@ export function GlowingLineChart({
           <div className="flex items-center gap-1">
             <Button
               aria-pressed={timeFilter === "all"}
-              className="h-8 px-3 text-xs"
+              className="h-8 px-3 text-xs font-medium transition-all"
               onClick={() => onTimeFilterChange?.("all")}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -291,7 +285,7 @@ export function GlowingLineChart({
             </Button>
             <Button
               aria-pressed={timeFilter === "72h"}
-              className="h-8 px-3 text-xs"
+              className="h-8 px-3 text-xs font-medium transition-all"
               onClick={() => onTimeFilterChange?.("72h")}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -314,10 +308,13 @@ export function GlowingLineChart({
             margin={{
               left: 10,
               right: 120,
-              top: 10,
+              top: 20,
               bottom: 60,
             }}
             onMouseLeave={() => setHoveredLine(null)}
+            style={{
+              background: "transparent",
+            }}
           >
             <defs>
               {/* Preload images in SVG defs to prevent flickering */}
@@ -329,29 +326,48 @@ export function GlowingLineChart({
                   height="0"
                 />
               ))}
+              {/* Gradient for each model line */}
+              {modelKeys.map((key) => {
+                const modelInfo = getModelInfo(key);
+                const color = modelInfo?.color || chartConfig[key]?.color || "hsl(var(--chart-1))";
+                return (
+                  <linearGradient
+                    key={`gradient-${key}`}
+                    id={`gradient-${key}`}
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+                    <stop offset="100%" stopColor={color} stopOpacity={0} />
+                  </linearGradient>
+                );
+              })}
             </defs>
             <title>Model performance over time</title>
             <CartesianGrid
               strokeDasharray="3 3"
               vertical={false}
               stroke="hsl(var(--border))"
-              opacity={0.3}
+              opacity={0.2}
+              horizontalPoints={yAxisConfig.ticks}
             />
             <XAxis
               axisLine={false}
               dataKey="month"
               tickLine={false}
               tickMargin={12}
-              tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
-              interval={0}
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+              interval="preserveStartEnd"
               angle={-45}
               textAnchor="end"
               height={80}
             />
             <YAxis
               axisLine={false}
-              domain={isPercent ? [-100, 150] : [0, 200]}
-              ticks={isPercent ? [-100, -50, 0, 50, 100, 150] : [0, 50, 100, 150, 200]}
+              domain={yAxisConfig.domain}
+              ticks={yAxisConfig.ticks}
               tickFormatter={(v: number) =>
                 isPercent
                   ? `${Math.round(v)}%`
@@ -362,24 +378,26 @@ export function GlowingLineChart({
                     }).format(v)
               }
               tickLine={false}
-              tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
               width={80}
             />
             {/* Reference line at starting value */}
-            {!isPercent && (
+            {isPercent && (
               <ReferenceLine
                 y={0}
                 stroke="hsl(var(--muted-foreground))"
-                strokeDasharray="3 3"
-                opacity={0.5}
+                strokeDasharray="5 5"
+                opacity={0.4}
+                strokeWidth={1.5}
               />
             )}
             <Tooltip
               content={<CustomTooltip hoveredLine={hoveredLine} />}
               cursor={{
-                stroke: hoveredLine ? MODEL_INFO[hoveredLine]?.color : "#888",
-                strokeWidth: 1,
-                strokeDasharray: "3 3",
+                stroke: hoveredLine ? MODEL_INFO[hoveredLine]?.color : "hsl(var(--muted-foreground))",
+                strokeWidth: 2,
+                strokeDasharray: "5 5",
+                opacity: 0.5,
               }}
             />
             {modelKeys.map((key) => {
@@ -393,20 +411,29 @@ export function GlowingLineChart({
                   key={key}
                   connectNulls
                   dataKey={key}
-                  dot={(dotProps) => (
-                    <CustomEndDot
-                      {...dotProps}
-                      chartConfig={chartConfig}
-                      data={chartData}
-                      hoveredLine={hoveredLine}
-                    />
-                  )}
+                  dot={(dotProps) => {
+                    const { key: dotKey, ...rest } = (dotProps as any) ?? {};
+                    return (
+                      <CustomEndDot
+                        key={dotKey}
+                        {...rest}
+                        chartConfig={chartConfig}
+                        data={chartData}
+                        hoveredLine={hoveredLine}
+                      />
+                    );
+                  }}
                   stroke={color}
-                  strokeWidth={isHovered ? 4 : 2}
-                  strokeOpacity={isDimmed ? 0.2 : 1}
+                  strokeWidth={isHovered ? 5 : 3}
+                  strokeOpacity={isDimmed ? 0.15 : 0.9}
                   type="monotone"
                   activeDot={false}
                   onMouseEnter={() => setHoveredLine(key)}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  animationDuration={300}
+                  animationEasing="ease-in-out"
+                  filter={isHovered ? `drop-shadow(0 0 8px ${color})` : undefined}
                 />
               );
             })}

@@ -1,134 +1,45 @@
-const NOF1_API_URL = "https://nof1.ai/api/conversations";
-const ALLOWED_SYMBOLS = new Set(["BTC", "ETH", "SOL"]);
-const ACCOUNT_SECTION_HEADER = "### HERE IS YOUR ACCOUNT INFORMATION & PERFORMANCE";
 
-interface ConversationsResponse {
-  conversations?: Array<{
-    user_prompt?: string;
-  }>;
+// @params{period} - The period for which the EMA is being calculated
+
+import type { Candlestick } from "../../lighter-sdk-ts/generated";
+export function getEma(prices: number[], period: number): number[] {
+    const multiplier = 2 / (period + 1);
+    
+    if (prices.length < period) {
+        throw new Error("Not enough prices provided");
+    }
+
+    // Calculate initial SMA
+    let sma = 0;
+    for (let i = 0; i < period; i++) {
+        sma += (prices[i] ?? 0);
+    }
+    sma /= period;
+
+    const emas = [sma];
+    
+    // Calculate EMA for remaining prices
+    for (let i = period; i < prices.length; i++) {
+        const ema = (emas[emas.length - 1] ?? 0) * (1 - multiplier) + (prices[i] ?? 0) * multiplier;
+        emas.push(ema);
+    }
+    
+    return emas;
 }
 
-interface IndicatorData {
-  currentTime: string | null;
-  allIndicatorData: string;
+export function getMidPrices(candlesticks: Candlestick[]) {
+    return candlesticks.map(({open, close}) => Number(((open + close) / 2).toFixed(3)));
 }
 
-const minutesPattern = /It has been\s+\d+\s+minutes since you started trading\.\s*/i;
-const invokedPattern = /\s*and you've been invoked\s+\d+\s+times(?=\.)/i;
-const currentTimePattern = /The current time is\s+([^\.\n]+)(?:\.)?/i;
-// Strip any leading numeric prefix like "807376. " or "434033. " that can appear before sentences.
-const numberPrefixPattern = /^\s*\d+\.\s+/;
-const accountSectionPattern = new RegExp(
-  `${ACCOUNT_SECTION_HEADER.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[\s\S]*$`,
-  "i",
-);
+// macd => ema12 = 38 points, ema26 = 24 points
+export function getMacd(prices: number[]) {
 
-export async function fetchIndicatorData(): Promise<IndicatorData> {
-  const response = await fetch(NOF1_API_URL, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-    },
-    cache: "no-store",
-  });
+    const ema26 = getEma(prices, 26); // [].length = 24
+    let ema12 = getEma(prices, 12); // [].length = 38
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch indicator data: ${response.statusText}`);
-  }
+    ema12 = ema12.slice(-ema26.length);
 
-  const data = (await response.json()) as ConversationsResponse;
-  const userPrompt = data.conversations?.[0]?.user_prompt;
-
-  if (!userPrompt) {
-    throw new Error("No conversation data available");
-  }
-
-  return extractIndicatorData(userPrompt);
+    console.log(ema12.length, ema26.length);
+    const macd = ema12.map((_, index) => (ema12[index] ?? 0) - (ema26[index] ?? 0));
+    return macd
 }
-
-function extractIndicatorData(prompt: string): IndicatorData {
-  let cleaned = prompt
-    .replace(minutesPattern, "")
-    .replace(invokedPattern, "")
-    .replace(accountSectionPattern, "")
-    .trim();
-
-  const currentTimeMatch = cleaned.match(currentTimePattern);
-  const currentTime = currentTimeMatch?.[1]?.trim() ?? null;
-
-  if (currentTimeMatch) {
-    cleaned = cleaned.replace(currentTimeMatch[0], "").trim();
-  }
-
-  // Remove number prefix after other replacements
-  cleaned = cleaned.replace(numberPrefixPattern, "").trim();
-
-  const sectionMatches = [...cleaned.matchAll(/### [^\n]+\n/g)];
-
-  if (sectionMatches.length === 0) {
-    return {
-      currentTime,
-      allIndicatorData: normalizeWhitespace(cleaned),
-    };
-  }
-
-  const assembledSections: string[] = [];
-
-  const initialSegment = cleaned.slice(0, sectionMatches[0].index).trim();
-  if (initialSegment) {
-    const normalizedInitial = normalizeWhitespace(initialSegment).replace(/\n?---$/, "").trim();
-    if (normalizedInitial) {
-      assembledSections.push(normalizedInitial);
-    }
-  }
-
-  for (let index = 0; index < sectionMatches.length; index += 1) {
-    const currentMatch = sectionMatches[index];
-    const start = currentMatch.index ?? 0;
-    const end =
-      index + 1 < sectionMatches.length
-        ? sectionMatches[index + 1].index ?? cleaned.length
-        : cleaned.length;
-    const section = cleaned.slice(start, end).trim();
-
-    if (!section) {
-      continue;
-    }
-
-    const header = currentMatch[0].trim();
-
-    if (header.toUpperCase() === ACCOUNT_SECTION_HEADER) {
-      continue;
-    }
-
-    const symbolMatch = header.match(/^### ALL (\w+) DATA$/i);
-    if (symbolMatch) {
-      const symbol = symbolMatch[1].toUpperCase();
-      if (!ALLOWED_SYMBOLS.has(symbol)) {
-        continue;
-      }
-    }
-
-    const normalizedSection = normalizeWhitespace(section);
-    if (!normalizedSection) {
-      continue;
-    }
-
-    if (assembledSections.length > 0) {
-      assembledSections.push("---");
-    }
-
-    assembledSections.push(normalizedSection);
-  }
-
-  return {
-    currentTime,
-    allIndicatorData: assembledSections.join("\n\n").trim(),
-  };
-}
-
-function normalizeWhitespace(value: string): string {
-  return value.replace(/\s+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
-}
-
-export type { IndicatorData };

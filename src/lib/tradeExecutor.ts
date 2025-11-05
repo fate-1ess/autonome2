@@ -5,7 +5,6 @@ import z from "zod";
 import { PROMPT } from "@/lib/prompt";
 import { getPortfolio } from "@/lib/getPortfolio";
 import { getOpenPositions } from "@/lib/openPositions";
-import { fetchIndicatorData } from "@/lib/indicators";
 import { PrismaClient } from "@prisma/client";
 import { ToolCallType } from "../../generated/prisma/enums";
 import { createPosition } from "@/lib/createPosition";
@@ -13,6 +12,7 @@ import { closePosition } from "@/lib/closePosition";
 import { MARKETS } from "@/lib/markets";
 import { google } from "@ai-sdk/google";
 import { mistral } from "@ai-sdk/mistral";
+import { getIndicators } from "./stockData";
 
 const prisma = new PrismaClient();
 
@@ -23,7 +23,7 @@ declare global {
   var tradeIntervalRunning: boolean | undefined;
 }
 
-const TRADE_INTERVAL_MS = 3 * 60 * 1000;
+const TRADE_INTERVAL_MS = 5 * 60 * 1000;
 const MODEL_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes max per model
 const INITIAL_CAPITAL = 10000; // Starting capital in USD
 const RISK_FREE_RATE = 0.04; // 4% annual risk-free rate
@@ -81,11 +81,31 @@ async function calculatePerformanceMetrics(account: Account, currentPortfolioVal
 }
 
 export async function runTradeWorkflow(account: Account) {
-  const [portfolio, openPositions, indicatorData] = await Promise.all([
+  const [portfolio, openPositions] = await Promise.all([
     getPortfolio(account),
-    getOpenPositions(account.apiKey, account.accountIndex),
-    fetchIndicatorData(),
+    getOpenPositions(account.apiKey, account.accountIndex, account.id),
   ]);
+
+  let allIndicatorData = "";
+  const indicators = await Promise.all(Object.keys(MARKETS).map(async marketSlug => {
+    const intradayIndicators = await getIndicators("5m", MARKETS[marketSlug].marketId);
+    const longTermIndicators = await getIndicators("4h", MARKETS[marketSlug].marketId);
+    
+    allIndicatorData = allIndicatorData + `
+    MARKET - ${marketSlug}
+    Intraday (5m candles) (oldest → latest):
+    Mid prices - [${intradayIndicators.midPrices.join(",")}]
+    EMA20 - [${intradayIndicators.ema20s.join(",")}]
+    MACD - [${intradayIndicators.macd.join(",")}]
+
+    Long Term (4h candles) (oldest → latest):
+    Mid prices - [${longTermIndicators.midPrices.join(",")}]
+    EMA20 - [${longTermIndicators.ema20s.join(",")}]
+    MACD - [${longTermIndicators.macd.join(",")}]
+    `
+  }))
+
+  const currentTime = new Date().toLocaleString("en-US", { timeZone: "UTC" });
 
   const modelInvocation = await prisma.invocations.create({
     data: {
@@ -102,9 +122,6 @@ export async function runTradeWorkflow(account: Account) {
     },
   });
 
-  const currentTime = indicatorData.currentTime ?? "Unavailable";
-  const allIndicatorData = indicatorData.allIndicatorData || "No indicator data available.";
-  
   // Calculate performance metrics
   const currentPortfolioValue = parseFloat(portfolio.total);
   const performanceMetrics = await calculatePerformanceMetrics(account, currentPortfolioValue);
@@ -135,7 +152,6 @@ export async function runTradeWorkflow(account: Account) {
   const result = await generateText({
     model: openrouter(account.modelName),
     prompt: enrichedPrompt,
-    stopWhen: stepCountIs(5),
     tools: {
       createPosition: tool({
         description: "Open one or more positions in the given markets",
@@ -319,7 +335,7 @@ export async function runManualGetOpenPositions() {
     };
 
     console.log("Manually fetching open positions");
-    const positions = await getOpenPositions(account.apiKey, account.accountIndex);
+  const positions = await getOpenPositions(account.apiKey, account.accountIndex, account.id);
     console.log("Open positions:", positions);
   } catch (error) {
     console.error("Manual getOpenPositions call failed", error);

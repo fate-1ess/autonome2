@@ -2,9 +2,11 @@ import { NonceManagerType } from "../../lighter-sdk-ts/nonce_manager";
 import { SignerClient } from "../../lighter-sdk-ts/signer";
 import { AccountApi, ApiKeyAuthentication, IsomorphicFetchHttpLibrary, OrderApi, ServerConfiguration } from "../../lighter-sdk-ts/generated";
 import type { Account } from "./accounts";
-import { API_KEY_INDEX, BASE_URL } from "./config";
+import { API_KEY_INDEX, BASE_URL, DEFAULT_SIMULATOR_OPTIONS, IS_SIMULATION_ENABLED } from "./config";
 import { MARKETS } from "./markets";
-import { CandlestickApi, MarketInfo } from "../../lighter-sdk-ts/generated";
+import { CandlestickApi } from "../../lighter-sdk-ts/generated";
+import { ExchangeSimulator } from "./simulator/exchangeSimulator";
+import type { OrderSide } from "./simulator/types";
 
 export interface PositionRequest {
     symbol: string;
@@ -21,6 +23,44 @@ export interface PositionResult {
 export async function createPosition(account: Account, positions: PositionRequest[]): Promise<PositionResult[]> {
     if (!positions || positions.length === 0) {
         return [];
+    }
+
+    if (IS_SIMULATION_ENABLED) {
+    const simulator = await ExchangeSimulator.bootstrap(DEFAULT_SIMULATOR_OPTIONS);
+    const accountId = account.id || "default";
+        const results: PositionResult[] = [];
+
+        for (const { symbol, side, quantity } of positions) {
+            if (side === "HOLD") {
+                results.push({ symbol, success: false, error: "HOLD action - no position created" });
+                continue;
+            }
+
+            const orderSide: OrderSide = side === "LONG" ? "buy" : "sell";
+            try {
+                const execution = await simulator.placeOrder({
+                    symbol,
+                    side: orderSide,
+                    quantity,
+                    type: "market",
+                }, accountId);
+
+                if (execution.status === "rejected" || execution.totalQuantity === 0) {
+                    results.push({
+                        symbol,
+                        success: false,
+                        error: execution.reason ?? "Order rejected",
+                    });
+                } else {
+                    results.push({ symbol, success: true });
+                }
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "Unknown error";
+                results.push({ symbol, success: false, error: message });
+            }
+        }
+
+        return results;
     }
 
     const client = await SignerClient.create({

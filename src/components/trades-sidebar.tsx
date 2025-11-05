@@ -90,7 +90,7 @@ export default function TradesSidebar({
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData,  1000 * 60 * 3); // Refresh every 10 seconds
+    const interval = setInterval(fetchData, 10_000); // Refresh every 10 seconds
     return () => clearInterval(interval);
   }, []);
 
@@ -184,9 +184,7 @@ export default function TradesSidebar({
         right: 0,
         top: 0,
         zIndex: isExpanded ? 50 : 1,
-        backgroundColor: selectedModelInfo 
-          ? `${selectedModelInfo.color}15` 
-          : "hsl(var(--background))",
+        backgroundColor: "hsl(var(--background))",
       }}
     >
       {/* Tabs */}
@@ -271,7 +269,7 @@ export default function TradesSidebar({
                             >
                               <Image
                                 alt={modelInfo.label}
-                                src="/deepseek.png"
+                                src={modelInfo.logo}
                                 width={10}
                                 height={10}
                                 style={{ objectFit: "contain" }}
@@ -333,7 +331,7 @@ export default function TradesSidebar({
                             >
                               <Image
                                 alt={modelInfo.label}
-                                src="/deepseek.png" 
+                                src={modelInfo.logo}
                                 width={18}
                                 height={18}
                                 style={{ objectFit: "contain" }}
@@ -482,7 +480,7 @@ export default function TradesSidebar({
                             >
                               <Image
                                 alt={modelInfo.label}
-                                src="/deepseek.png"
+                                src={modelInfo.logo}
                                 width={10}
                                 height={10}
                                 style={{ objectFit: "contain" }}
@@ -549,7 +547,7 @@ export default function TradesSidebar({
                             >
                               <Image
                                 alt={modelInfo.label}
-                                src="/deepseek.png" 
+                                src={modelInfo.logo}
                                 width={18}
                                 height={18}
                                 style={{ objectFit: "contain" }}
@@ -656,7 +654,7 @@ export default function TradesSidebar({
                             >
                               <Image
                                 alt={modelInfo.label}
-                                src="/deepseek.png"
+                                src={modelInfo.logo}
                                 width={10}
                                 height={10}
                                 style={{ objectFit: "contain" }}
@@ -722,7 +720,7 @@ export default function TradesSidebar({
                         >
                           <Image
                             alt={modelInfo.label}
-                            src="/deepseek.png" 
+                                src={modelInfo.logo}
                             width={18}
                             height={18}
                             style={{ objectFit: "contain" }}
