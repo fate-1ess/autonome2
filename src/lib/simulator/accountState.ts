@@ -5,117 +5,173 @@ interface PositionInternal {
   avgEntryPrice: number;
   realizedPnl: number;
   markPrice: number;
+  margin: number;
 }
 
 export class AccountState {
   private static readonly CASH_EPSILON = 1e-6;
+  private static readonly MARGIN_EPSILON = 1e-6;
   private cashBalance: number;
   private readonly quoteCurrency: string;
   private readonly positions = new Map<string, PositionInternal>();
   private totalRealized = 0;
   private totalFees = 0;
+  private totalFunding = 0;
 
   constructor(private readonly options: ExchangeSimulatorOptions) {
     this.cashBalance = options.initialCapital;
     this.quoteCurrency = options.quoteCurrency;
   }
 
-  previewCashImpact(side: OrderSide, execution: OrderExecution): number {
-    if (execution.status === "rejected" || execution.totalQuantity === 0) {
-      return 0;
+  private clone(): AccountState {
+    const copy = new AccountState(this.options);
+    copy.cashBalance = this.cashBalance;
+    copy.totalRealized = this.totalRealized;
+    copy.totalFees = this.totalFees;
+    copy.totalFunding = this.totalFunding;
+    copy.positions.clear();
+    for (const [symbol, position] of this.positions.entries()) {
+      copy.positions.set(symbol, { ...position });
     }
-
-    const direction = side === "buy" ? 1 : -1;
-    let delta = 0;
-
-    for (const fill of execution.fills) {
-      const signedQty = direction * fill.quantity;
-      delta -= signedQty * fill.price;
-      delta -= fill.fee;
-    }
-
-    return delta;
+    return copy;
   }
 
-  hasSufficientCash(side: OrderSide, execution: OrderExecution): boolean {
-    const impact = this.previewCashImpact(side, execution);
-    if (impact >= 0) {
+  private calculateTotalMargin(): number {
+    let total = 0;
+    for (const position of this.positions.values()) {
+      if (!Number.isFinite(position.margin)) continue;
+      total += Math.max(position.margin, 0);
+    }
+    return total;
+  }
+
+  private computeEquityValue(): number {
+    let netPositionValue = 0;
+    for (const position of this.positions.values()) {
+      netPositionValue += position.markPrice * position.quantity;
+    }
+    return this.cashBalance + netPositionValue;
+  }
+
+  private resolveLeverage(leverage: number | null | undefined, position: PositionInternal | undefined, referencePrice: number): number {
+    if (typeof leverage === "number" && Number.isFinite(leverage) && leverage > 0) {
+      return Math.max(leverage, 1);
+    }
+
+    if (position && Math.abs(position.quantity) > AccountState.MARGIN_EPSILON) {
+      const margin = Number.isFinite(position.margin) ? position.margin : 0;
+      if (margin > AccountState.MARGIN_EPSILON) {
+        const price = position.avgEntryPrice || referencePrice;
+        if (price > 0) {
+          const notional = Math.abs(position.quantity) * price;
+          if (notional > 0) {
+            return Math.max(notional / margin, 1);
+          }
+        }
+      }
+    }
+
+    return 1;
+  }
+
+  hasSufficientCash(symbol: string, side: OrderSide, execution: OrderExecution, leverage?: number | null): boolean {
+    if (execution.status === "rejected" || execution.totalQuantity === 0) {
       return true;
     }
 
-    const projected = this.cashBalance + impact;
-    return projected >= -AccountState.CASH_EPSILON;
+    const preview = this.clone();
+    preview.applyExecution(symbol, side, execution, leverage);
+
+    const projectedEquity = preview.computeEquityValue();
+    const projectedMargin = preview.calculateTotalMargin();
+
+    return projectedEquity + AccountState.CASH_EPSILON >= projectedMargin;
   }
 
-  applyExecution(symbol: string, side: OrderSide, execution: OrderExecution) {
+  applyExecution(symbol: string, side: OrderSide, execution: OrderExecution, leverage?: number | null) {
     if (execution.status === "rejected" || execution.totalQuantity === 0) {
       return;
     }
 
     const direction = side === "buy" ? 1 : -1;
-
-    for (const fill of execution.fills) {
-      const signedQty = direction * fill.quantity;
-
-      // Deduct the cost/credit of the fill and the fee from cash
-      this.cashBalance -= signedQty * fill.price;
-      this.cashBalance -= fill.fee;
-
-      const existing = this.positions.get(symbol) ?? {
+    let position = this.positions.get(symbol);
+    if (!position) {
+      position = {
         quantity: 0,
         avgEntryPrice: 0,
         realizedPnl: 0,
-        markPrice: fill.price,
+        markPrice: execution.fills[0]?.price ?? 0,
+        margin: 0,
       };
+    } else if (!Number.isFinite(position.margin)) {
+      const referencePrice = position.avgEntryPrice || position.markPrice;
+      const inferredNotional = referencePrice && referencePrice > 0 ? Math.abs(position.quantity) * referencePrice : 0;
+      position.margin = inferredNotional;
+    }
 
-      // If no existing position or adding to existing position in same direction
-      if (existing.quantity === 0 || Math.sign(existing.quantity) === Math.sign(signedQty)) {
-        const totalQty = existing.quantity + signedQty;
-        const prevNotional = existing.avgEntryPrice * Math.abs(existing.quantity);
+    for (const fill of execution.fills) {
+      const signedQty = direction * fill.quantity;
+      const notional = fill.quantity * fill.price;
+      const leverageFactor = this.resolveLeverage(leverage, position, fill.price);
+      const startingQuantity = position.quantity;
+
+      this.cashBalance -= signedQty * fill.price;
+      this.cashBalance -= fill.fee;
+
+      if (startingQuantity === 0 || Math.sign(startingQuantity) === Math.sign(signedQty)) {
+        const totalQty = startingQuantity + signedQty;
+        const prevNotional = position.avgEntryPrice * Math.abs(startingQuantity);
         const newNotional = fill.price * Math.abs(signedQty);
-        existing.quantity = totalQty;
-        existing.avgEntryPrice = totalQty !== 0 ? (prevNotional + newNotional) / Math.abs(totalQty) : 0;
+        position.quantity = totalQty;
+        position.avgEntryPrice = totalQty !== 0 ? (prevNotional + newNotional) / Math.abs(totalQty) : 0;
+        position.margin += notional / leverageFactor;
       } else {
-        // Reducing or flipping position
-        const closingQty = Math.min(Math.abs(existing.quantity), Math.abs(signedQty));
-        
-        // Calculate realized PnL on the closed portion
-        const realized = existing.quantity > 0
-          ? (fill.price - existing.avgEntryPrice) * closingQty
-          : (existing.avgEntryPrice - fill.price) * closingQty;
+        const existingAbs = Math.abs(startingQuantity);
+        const closingQty = Math.min(existingAbs, Math.abs(signedQty));
 
-        existing.realizedPnl += realized;
+        if (existingAbs > 0) {
+          const marginRelease = position.margin * (closingQty / existingAbs);
+          position.margin -= marginRelease;
+          if (Math.abs(position.margin) < AccountState.MARGIN_EPSILON) {
+            position.margin = 0;
+          }
+        }
+
+        const realized = startingQuantity > 0
+          ? (fill.price - position.avgEntryPrice) * closingQty
+          : (position.avgEntryPrice - fill.price) * closingQty;
+
+        position.realizedPnl += realized;
         this.totalRealized += realized;
 
-        const remainingQty = existing.quantity + signedQty;
-        
+        const remainingQty = startingQuantity + signedQty;
+
         if (remainingQty === 0) {
-          // Position fully closed
-          existing.quantity = 0;
-          existing.avgEntryPrice = 0;
-          // Keep realized PnL for this fill (it will be reported then cleared)
-        } else if (Math.sign(remainingQty) === Math.sign(existing.quantity)) {
-          // Position reduced but same direction
-          existing.quantity = remainingQty;
-          // avgEntryPrice stays the same
+          position.quantity = 0;
+          position.avgEntryPrice = 0;
+          position.margin = 0;
+        } else if (Math.sign(remainingQty) === Math.sign(startingQuantity)) {
+          position.quantity = remainingQty;
         } else {
-          // Position flipped to opposite direction - this is a NEW position
-          existing.quantity = remainingQty;
-          existing.avgEntryPrice = fill.price;
-          // Note: we keep the realized PnL from the flip for reporting,
-          // but the new opposite position starts fresh
+          const openedQty = Math.abs(remainingQty);
+          const marginForFlip = (openedQty * fill.price) / leverageFactor;
+          position.quantity = remainingQty;
+          position.avgEntryPrice = fill.price;
+          position.margin = marginForFlip;
         }
       }
 
-      existing.markPrice = fill.price;
+      position.markPrice = fill.price;
       this.totalFees += fill.fee;
 
-      // Only delete if both quantity and realized PnL are zero
-      // Keep positions with zero quantity if they have realized PnL to report
-      if (existing.quantity === 0 && Math.abs(existing.realizedPnl) < 0.01) {
+      if (!Number.isFinite(position.margin) || position.margin < 0) {
+        position.margin = 0;
+      }
+
+      if (position.quantity === 0 && Math.abs(position.realizedPnl) < 0.01) {
         this.positions.delete(symbol);
       } else {
-        this.positions.set(symbol, existing);
+        this.positions.set(symbol, position);
       }
     }
   }
@@ -126,10 +182,43 @@ export class AccountState {
     position.markPrice = markPrice;
   }
 
+  applyFunding(symbol: string, effectiveRate: number) {
+    if (!Number.isFinite(effectiveRate) || effectiveRate === 0) {
+      return;
+    }
+
+    const position = this.positions.get(symbol);
+    if (!position || position.quantity === 0) {
+      return;
+    }
+
+    const markPrice = position.markPrice;
+    if (!Number.isFinite(markPrice) || markPrice <= 0) {
+      return;
+    }
+
+    const notional = Math.abs(position.quantity) * markPrice;
+    if (notional === 0) {
+      return;
+    }
+
+    const direction = Math.sign(position.quantity) || 1;
+    const fundingPnl = -direction * notional * effectiveRate;
+    if (fundingPnl === 0) {
+      return;
+    }
+
+    this.cashBalance += fundingPnl;
+    position.realizedPnl += fundingPnl;
+    this.totalRealized += fundingPnl;
+    this.totalFunding += fundingPnl;
+  }
+
   getSnapshot(): AccountSnapshot {
     const positions: PositionSummary[] = [];
     let unrealizedTotal = 0;
     let netPositionValue = 0; // Signed market value of all positions
+    let totalMargin = 0;
 
     for (const [symbol, position] of this.positions.entries()) {
       // Skip positions with zero quantity
@@ -146,6 +235,13 @@ export class AccountState {
       
       // Signed position value reflects long vs short exposure
       netPositionValue += position.markPrice * position.quantity;
+
+      const marginUsed = Number.isFinite(position.margin) ? Math.max(position.margin, 0) : 0;
+      totalMargin += marginUsed;
+      const referencePrice = position.avgEntryPrice || position.markPrice;
+      const price = referencePrice && referencePrice > 0 ? referencePrice : position.markPrice;
+      const notional = price > 0 ? Math.abs(position.quantity) * price : 0;
+      const leverage = marginUsed > AccountState.MARGIN_EPSILON && notional > 0 ? notional / marginUsed : null;
       
       positions.push({
         symbol,
@@ -155,27 +251,30 @@ export class AccountState {
         realizedPnl: position.realizedPnl,
         unrealizedPnl: unrealized,
         markPrice: position.markPrice,
+        margin: marginUsed,
+        notional,
+        leverage,
       });
     }
 
     // Equity = cash + current value of all positions
     // This represents your total account value
     const equity = this.cashBalance + netPositionValue;
-    
-    // Available cash stays non-negative; borrowed balance tracks margin usage
-    const availableCash = Math.max(this.cashBalance, 0);
     const borrowedBalance = Math.max(-this.cashBalance, 0);
+    const freeCollateral = equity - totalMargin;
+    const availableCash = Math.max(freeCollateral, 0);
 
     return {
       cashBalance: this.cashBalance,
       availableCash,
       borrowedBalance,
       equity,
-      marginBalance: equity,
+      marginBalance: totalMargin,
       quoteCurrency: this.quoteCurrency,
       positions,
       totalRealizedPnl: this.totalRealized,
       totalUnrealizedPnl: unrealizedTotal,
+      totalFundingPnl: this.totalFunding,
     };
   }
 

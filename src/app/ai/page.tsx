@@ -1,22 +1,28 @@
 "use client";
 
+import { useMemo, useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { Send } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 import { Response } from "@/components/response";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export default function AIPage() {
+function ChatInterface() {
   const [input, setInput] = useState("");
   const [generation, setGeneration] = useState();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({
-      api: "/api/nvidia",
-    }),
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/nvidia",
+      }),
+    [],
+  );
+
+  const { messages, sendMessage } = useChat({
+    transport,
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -39,17 +45,26 @@ export default function AIPage() {
 
   const handleGenerate = async () => {
     setIsLoading(true);
-    await fetch("/api/ai", {
-      method: "POST",
-      body: JSON.stringify({
-        prompt: input || "Messages during finals week.",
-      }),
-    }).then((response) => {
-      response.json().then((json) => {
-        setGeneration(json.notifications);
-        setIsLoading(false);
+    try {
+      const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: input || "Messages during finals week.",
+        }),
       });
-    });
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const json = await response.json().catch(() => ({}));
+      setGeneration(json?.notifications ?? json);
+    } catch (error) {
+      console.error("Failed to generate AI response", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -126,4 +141,22 @@ export default function AIPage() {
       </form>
     </div>
   );
+}
+
+export default function AIPage() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <div className="mx-auto flex w-full items-center justify-center p-4 text-muted-foreground">
+        Loading chat...
+      </div>
+    );
+  }
+
+  return <ChatInterface />;
 }

@@ -35,6 +35,7 @@ model Invocations {
   id                   String   @id @default(uuid())
   modelId              String
   response             String
+  responsePayload      Json?
   model                Models   @relation(fields: [modelId], references: [id])
   toolCalls            ToolCalls[]
   createdAt            DateTime @default(now())

@@ -1,12 +1,14 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@server/db/prisma"; 
+import { DATA_CACHE_TAGS } from "@/lib/cache/tags";
 
-const prisma = new PrismaClient();
+async function loadPortfolioHistory() {
+  'use cache';
+  cacheTag(DATA_CACHE_TAGS.PORTFOLIO_HISTORY);
+  cacheLife({ stale: 60, revalidate: 120, expire: 600 });
 
-export async function GET() {
-  try {
-    // Fetch portfolio size history with model information
-    const portfolioData = await prisma.portfolioSize.findMany({
+  const portfolioData = await prisma.portfolioSize.findMany({
       include: {
         model: {
           select: {
@@ -20,7 +22,17 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(portfolioData);
+  return portfolioData.map((entry) => ({
+    ...entry,
+    createdAt: entry.createdAt.toISOString(),
+    updatedAt: entry.updatedAt.toISOString(),
+  }));
+}
+
+export async function GET() {
+  try {
+    const portfolioHistory = await loadPortfolioHistory();
+    return NextResponse.json(portfolioHistory);
   } catch (error) {
     console.error("Failed to fetch portfolio history:", error);
     return NextResponse.json(
@@ -30,7 +42,7 @@ export async function GET() {
             ? error.message
             : "Unknown error while fetching portfolio history",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

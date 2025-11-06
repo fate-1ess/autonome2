@@ -1,6 +1,6 @@
+import { revalidateDataTags, DATA_CACHE_TAGS } from "@/lib/cache/tags";
 import { getPortfolio } from "./getPortfolio";
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import { prisma } from "@server/db/prisma";
 
 const PORTFOLIO_INTERVAL_MS = 1000 * 60 * 5;
 
@@ -21,6 +21,7 @@ async function recordPortfolios() {
   const models = await prisma.models.findMany();
   console.log(`[Portfolio Tracker] Found ${models.length} models`);
 
+  let recordedAny = false;
   for (const model of models) {
     try {
       const portfolio = await getPortfolio({
@@ -41,6 +42,7 @@ async function recordPortfolios() {
             netPortfolio: portfolio.total,
           },
         });
+        recordedAny = true;
         console.log(`[Portfolio Tracker] ✓ Recorded ${model.name}: $${portfolio.total}`);
       } else {
         console.warn(`[Portfolio Tracker] Invalid portfolio data for ${model.name}:`, portfolio);
@@ -48,5 +50,9 @@ async function recordPortfolios() {
     } catch (error) {
       console.error(`[Portfolio Tracker] Error recording portfolio for ${model.name}:`, error);
     }
+  }
+
+  if (recordedAny) {
+    await revalidateDataTags(DATA_CACHE_TAGS.PORTFOLIO_HISTORY);
   }
 }

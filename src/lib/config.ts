@@ -20,6 +20,8 @@ export const DEFAULT_SIMULATOR_OPTIONS: ExchangeSimulatorOptions = {
 		takerBps: Number(process.env.SIM_TAKER_FEE_BPS ?? 5),
 	},
 	deterministicSeed: process.env.SIM_DETERMINISTIC_SEED ? Number(process.env.SIM_DETERMINISTIC_SEED) : undefined,
+	fundingPeriodHours: Number(process.env.SIM_FUNDING_PERIOD_HOURS ?? 8),
+	fundingRefreshIntervalMs: Number(process.env.SIM_FUNDING_REFRESH_MS ?? 60_000),
 	refreshIntervalMs: Number(process.env.SIM_REFRESH_INTERVAL_MS ?? 3_000),
 };
 

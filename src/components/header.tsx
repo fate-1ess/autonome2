@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
 import { AnimatedThemeToggler } from "./ui/animated-theme-toggler";
 import { Maximize2, Minimize2 } from "lucide-react";
 
@@ -11,35 +10,11 @@ type HeaderProps = {
 };
 
 export default function Header({ isSidebarExpanded, onToggleSidebar }: HeaderProps) {
-  const [currentTime, setCurrentTime] = useState("");
-
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      const timeString = now
-        .toLocaleTimeString("en-US", {
-          hour12: true,
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        })
-        .replace(/:/g, ":")
-        .toUpperCase();
-      setCurrentTime(timeString);
-    };
-
-    updateTime();
-
-    const interval = setInterval(updateTime, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <div className="flex items-center justify-between border-b px-6 py-4">
       <div className="flex items-center gap-3">
-  <Image alt="Autonome logo" height={32} src="/logo.png" width={32} style={{ height: "auto" }} />
-        <div className="text-lg font-mono tracking-wider text-muted-foreground">
+        <Image alt="Autonome logo" height={32} src="/logo.png" width={32} style={{ height: "auto" }} />
+        <div className="text-lg font-mono tracking-wider text-foreground">
           AutonoMe
         </div>
       </div>
@@ -48,7 +23,7 @@ export default function Header({ isSidebarExpanded, onToggleSidebar }: HeaderPro
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="flex items-center gap-1.5 text-sm font-light text-muted-foreground hover:text-foreground transition-colors"
+          className="cursor-pointer flex items-center gap-1.5 text-sm font-light text-muted-foreground hover:text-foreground transition-colors"
           aria-label={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
         >
           {isSidebarExpanded ? (
@@ -63,7 +38,7 @@ export default function Header({ isSidebarExpanded, onToggleSidebar }: HeaderPro
             </>
           )}
         </button>
-        <AnimatedThemeToggler />
+        <AnimatedThemeToggler className="cursor-pointer text-muted-foreground hover:text-foreground"/>
       </div>
     </div>
   );

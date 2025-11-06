@@ -27,6 +27,8 @@ export interface ExchangeSimulatorOptions {
   slippage: SimulatorSlippage;
   fees: SimulatorFeeConfig;
   deterministicSeed?: number;
+  fundingPeriodHours: number;
+  fundingRefreshIntervalMs: number;
   refreshIntervalMs: number;
 }
 
@@ -58,6 +60,7 @@ export interface OrderMatchingInput {
   type: OrderType;
   quantity: number;
   limitPrice?: number;
+  leverage?: number;
 }
 
 export interface FillDetail {
@@ -94,6 +97,9 @@ export interface PositionSummary {
   realizedPnl: number;
   unrealizedPnl: number;
   markPrice: number;
+  margin: number;
+  notional: number;
+  leverage: number | null;
 }
 
 export interface AccountSnapshot {
@@ -106,6 +112,7 @@ export interface AccountSnapshot {
   positions: PositionSummary[];
   totalRealizedPnl: number;
   totalUnrealizedPnl: number;
+  totalFundingPnl: number;
 }
 
 export interface OrderBookSource {

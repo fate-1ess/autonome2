@@ -29,7 +29,7 @@ export const MODEL_INFO: Record<
     label: "Qwen3 Max",
   },
   "glm-4.5-air": {
-    logo: "/glm.png",
+    logo: "/glm.svg",
     color: "#343333",
     label: "GLM 4.5 Air",
   },
@@ -37,7 +37,56 @@ export const MODEL_INFO: Record<
     logo: "/minimax.png",
     color: "#E62176",
     label: "Minimax M2",
+  },
+  "buynnhold-btc": {
+    logo: "",
+    color: "#F7931A",
+    label: "Buy & Hold BTC",
+  },
+};
+
+const deriveModelCandidates = (rawName: string): string[] => {
+  const trimmed = (rawName ?? "").trim();
+  if (!trimmed) {
+    return [];
   }
+
+  const candidates = new Set<string>();
+  const add = (value: string | undefined | null) => {
+    if (!value) return;
+    const candidate = value.trim();
+    if (candidate) {
+      candidates.add(candidate);
+      candidates.add(candidate.toLowerCase());
+    }
+  };
+
+  add(trimmed);
+
+  const afterSlash = trimmed.includes("/") ? trimmed.split("/").pop() ?? trimmed : trimmed;
+  add(afterSlash);
+
+  const beforeColon = trimmed.includes(":") ? trimmed.split(":")[0] : trimmed;
+  add(beforeColon);
+
+  const afterSlashBeforeColon = afterSlash.includes(":") ? afterSlash.split(":")[0] : afterSlash;
+  add(afterSlashBeforeColon);
+
+  const expanded = Array.from(candidates);
+  for (const candidate of expanded) {
+    const normalized = candidate
+      .toLowerCase()
+      .replace(/[\s_.]+/g, "-")
+      .replace(/[/:]+/g, "-")
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+    if (normalized) {
+      candidates.add(normalized);
+    }
+  }
+
+  return Array.from(candidates).filter(Boolean);
 };
 
 // Get model info with fallback for unknown models
@@ -46,30 +95,13 @@ export function getModelInfo(modelName: string): {
   color: string;
   label: string;
 } {
-  // Try direct lookup (case-sensitive)
-  if (MODEL_INFO[modelName]) {
-    return MODEL_INFO[modelName];
+  const candidates = deriveModelCandidates(modelName);
+  for (const candidate of candidates) {
+    if (MODEL_INFO[candidate]) {
+      return MODEL_INFO[candidate];
+    }
   }
 
-  // Try lowercase lookup
-  const lowerCase = modelName.toLowerCase();
-  if (MODEL_INFO[lowerCase]) {
-    return MODEL_INFO[lowerCase];
-  }
-
-  // Try normalized version (replace spaces/underscores/dots with hyphens)
-  const normalized = modelName.toLowerCase().replace(/[_\s.]+/g, "-");
-  if (MODEL_INFO[normalized]) {
-    return MODEL_INFO[normalized];
-  }
-
-  // Try with underscores
-  const underscored = modelName.toLowerCase().replace(/[-\s.]+/g, "_");
-  if (MODEL_INFO[underscored]) {
-    return MODEL_INFO[underscored];
-  }
-
-  // Fallback for unknown models
   return {
     logo: "",
     color: "#888888",

@@ -2,11 +2,15 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import NumberFlow from "@number-flow/react";
 import { getModelInfo } from "@/lib/modelConfig";
+import { formatCurrencyValue } from "@/lib/formatters";
+import type { ChartConfig } from "@/components/ui/chart";
 
 type ModelLegendProps = {
-  chartData: Array<{ month: string; [key: string]: number | string }>;
-  chartConfig: Record<string, { label: string; color: string }>;
+  chartData: Array<{ month: string; [key: string]: number | string | null | undefined }>;
+  chartConfig: ChartConfig;
+  seriesMeta: Record<string, { originalKey: string }>;
   valueMode?: "usd" | "percent";
   hoveredLine: string | null;
   onHoverLine: (key: string | null) => void;
@@ -15,25 +19,38 @@ type ModelLegendProps = {
 export default function ModelLegend({
   chartData,
   chartConfig,
+  seriesMeta,
   valueMode = "usd",
   hoveredLine,
   onHoverLine,
 }: ModelLegendProps) {
   const [imagesLoaded, setImagesLoaded] = useState(false);
 
-  const modelKeys = Object.keys(chartConfig).filter(
-    (key) => key !== "buynnhold_btc"
-  );
+  const modelKeys = Object.keys(chartConfig).filter((key) => Boolean(seriesMeta[key]));
   const lastPoint = chartData.at(-1) ?? { month: "" };
   const isPercent = valueMode === "percent";
 
   // Preload all model logos
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
     const modelLogos = modelKeys
-      .map((key) => getModelInfo(key).logo)
-      .filter((logo) => logo); // Filter out empty strings
-    
-    const imagePromises = modelLogos.map((url) => {
+      .map((key) => getModelInfo(seriesMeta[key]?.originalKey ?? key).logo)
+      .filter((logo): logo is string => typeof logo === "string" && logo.length > 0);
+
+    if (modelLogos.length === 0) {
+      setImagesLoaded(true);
+      return;
+    }
+
+    setImagesLoaded(false);
+    const uniqueLogos = Array.from(new Set(modelLogos));
+
+    let cancelled = false;
+
+    const imagePromises = uniqueLogos.map((url) => {
       return new Promise((resolve, reject) => {
         const img = new window.Image();
         img.onload = resolve;
@@ -42,22 +59,26 @@ export default function ModelLegend({
       });
     });
 
-    Promise.all(imagePromises)
-      .then(() => setImagesLoaded(true))
-      .catch(() => setImagesLoaded(true));
-  }, [modelKeys]);
+    Promise.allSettled(imagePromises).finally(() => {
+      if (!cancelled) {
+        setImagesLoaded(true);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [modelKeys, seriesMeta]);
 
   const formatValue = (v?: number): string => {
     if (typeof v !== "number") {
       return "";
     }
-    return isPercent
-      ? `${Math.round(v)}%`
-      : new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: "USD",
-          maximumFractionDigits: 2,
-        }).format(v);
+    if (isPercent) {
+      return `${Math.round(v)}%`;
+    }
+    const currencyLabel = formatCurrencyValue(v);
+    return currencyLabel === "N/A" ? "" : currencyLabel;
   };
 
   // Sort model keys by current value (descending)
@@ -73,7 +94,8 @@ export default function ModelLegend({
     <div className="border-t px-6 py-4">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6">
         {sortedModelKeys.map((key) => {
-          const modelInfo = getModelInfo(key);
+          const originalKey = seriesMeta[key]?.originalKey ?? key;
+          const modelInfo = getModelInfo(originalKey);
           const color =
             modelInfo?.color ||
             chartConfig[key]?.color ||
@@ -132,9 +154,31 @@ export default function ModelLegend({
                 )}
                 <span className="font-medium">{label}</span>
               </div>
-              <span className="mt-1 text-xs tabular-nums text-muted-foreground" style={{ opacity: isDimmed ? 0.4 : 1 }}>
-                {formatValue(value)}
-              </span>
+              <div className="mt-1 text-xs tabular-nums text-muted-foreground" style={{ opacity: isDimmed ? 0.4 : 1 }}>
+                {typeof value === "number" && !isPercent ? (
+                  <NumberFlow
+                    value={value}
+                    format={{
+                      style: "currency",
+                      currency: "USD",
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }}
+                  />
+                ) : typeof value === "number" && isPercent ? (
+                  <NumberFlow
+                    value={value}
+                    format={{
+                      style: "percent",
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0,
+                    }}
+                    transformValue={(v) => v / 100}
+                  />
+                ) : (
+                  <span>{formatValue(value)}</span>
+                )}
+              </div>
             </div>
           );
         })}

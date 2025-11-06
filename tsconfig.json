@@ -22,6 +22,15 @@
       "@/*": [
         "./src/*"
       ],
+      "@client/*": [
+        "./src/client/*"
+      ],
+      "@server/*": [
+        "./src/server/*"
+      ],
+      "@shared/*": [
+        "./src/shared/*"
+      ],
       "../../lighter-sdk-ts/signer": [
         "./lighter-sdk-ts/signer-stub.ts"
       ]

@@ -38,6 +38,8 @@ export async function handleSimOrder(request: NextRequest) {
     const side = normalizeSide(body.side);
     const orderType = (body.type ?? "market").toLowerCase() === "limit" ? "limit" : "market";
     const limitPrice = body.limitPrice !== undefined ? Number(body.limitPrice) : body.price !== undefined ? Number(body.price) : undefined;
+    const rawLeverage = body.leverage !== undefined ? Number(body.leverage) : undefined;
+    const leverage = Number.isFinite(rawLeverage) && rawLeverage !== null && rawLeverage > 0 ? rawLeverage : undefined;
 
     if (!symbol) {
       throw new Error("Symbol is required");
@@ -58,6 +60,7 @@ export async function handleSimOrder(request: NextRequest) {
         quantity,
         type: orderType,
         limitPrice,
+        leverage,
       },
       accountId,
     );

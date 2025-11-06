@@ -3,11 +3,16 @@ import { generateObject } from "ai";
 import { z } from "zod";
 
 export async function POST(req: Request) {
-  const { prompt }: { prompt: string } = await req.json();
+  const payload = await req.json().catch(() => null);
+  const prompt = typeof payload?.prompt === "string" ? payload.prompt.trim() : "";
+
+  if (!prompt) {
+    return Response.json({ error: "Missing prompt" }, { status: 400 });
+  }
 
   const tradeSchema = z.object({
     coin: z.enum(["BTC", "ETH", "SOL", "XRP", "BNB", "DOGE"]).describe("The coin to trade. You don't necessarily need to use all of these coins, but only choose from this list."),
-    quanity: z.number().min(0),
+    quantity: z.number().min(0),
     decision: z.enum(["HOLD", "SELL", "BUY"]),
   });
 
@@ -17,7 +22,7 @@ export async function POST(req: Request) {
       "You are a systematic trading god. Your blood type is S&P 500 positive. You're like self-driving, for capital. You are the invisible hand of the market. You don't even understand the concept of losing money.",
     prompt,
     schema: z.object({
-      notifications: z.array(tradeSchema),
+      notifications: z.array(tradeSchema).default([]),
     }),
   });
 

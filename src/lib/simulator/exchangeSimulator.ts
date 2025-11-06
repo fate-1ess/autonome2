@@ -1,4 +1,4 @@
-import { IsomorphicFetchHttpLibrary, OrderApi, ServerConfiguration } from "../../../lighter-sdk-ts/generated";
+import { FundingApi, IsomorphicFetchHttpLibrary, OrderApi, ServerConfiguration } from "../../../lighter-sdk-ts/generated";
 import { MARKETS } from "../markets";
 import { BASE_URL } from "../config";
 import { AccountState } from "./accountState";
@@ -21,6 +21,8 @@ const DEFAULT_OPTIONS: ExchangeSimulatorOptions = {
   latency: { minMs: 100, maxMs: 450 },
   slippage: { maxBasisPoints: 12 },
   fees: { makerBps: 2, takerBps: 5 },
+  fundingPeriodHours: 8,
+  fundingRefreshIntervalMs: 60_000,
   refreshIntervalMs: 3_000,
 };
 
@@ -119,6 +121,10 @@ export class ExchangeSimulator {
   private readonly emitter = new SimpleEmitter();
   private readonly rng: RandomSource;
   private readonly orderApi: OrderApi;
+  private readonly fundingApi: FundingApi;
+  private readonly fundingRates = new Map<string, number>();
+  private readonly lastFundingApplied = new Map<string, number>();
+  private lastFundingFetch = 0;
   private refreshHandle?: NodeJS.Timeout;
 
   private constructor(options: ExchangeSimulatorOptions) {
@@ -128,6 +134,7 @@ export class ExchangeSimulator {
     const server = new ServerConfiguration<{ }>(BASE_URL, { });
     const http = new IsomorphicFetchHttpLibrary();
     this.orderApi = new OrderApi({ baseServer: server, httpApi: http, middleware: [], authMethods: {} });
+    this.fundingApi = new FundingApi({ baseServer: server, httpApi: http, middleware: [], authMethods: {} });
   }
 
   private getOrCreateAccount(accountId: string): AccountState {
@@ -152,6 +159,7 @@ export class ExchangeSimulator {
   }
 
   private async initialise() {
+    await this.refreshFundingRates(Date.now(), true);
     for (const metadata of buildMarketMetadata()) {
       const market = new MarketState(metadata, this.orderApi);
       await market.refresh();
@@ -170,11 +178,18 @@ export class ExchangeSimulator {
   }
 
   private async refreshAll() {
+    const now = Date.now();
+    await this.refreshFundingRates(now, false);
+
     for (const [symbol, market] of this.markets) {
       try {
         const snapshot = await market.refresh();
+        const effectiveFundingRate = this.calculateFundingIncrement(symbol, now);
         for (const account of this.accounts.values()) {
           account.updateMarkPrice(symbol, snapshot.midPrice);
+          if (effectiveFundingRate !== undefined && effectiveFundingRate !== 0) {
+            account.applyFunding(symbol, effectiveFundingRate);
+          }
         }
         this.emitter.emit("book", { type: "book", payload: snapshot } as MarketEvent);
       } catch (error) {
@@ -226,7 +241,7 @@ export class ExchangeSimulator {
       return { ...execution, symbol, side: request.side, type: request.type };
     }
 
-    if (!account.hasSufficientCash(request.side, execution)) {
+    if (!account.hasSufficientCash(symbol, request.side, execution, request.leverage)) {
       return {
         fills: [],
         averagePrice: 0,
@@ -240,7 +255,7 @@ export class ExchangeSimulator {
       };
     }
 
-    account.applyExecution(symbol, request.side, execution);
+    account.applyExecution(symbol, request.side, execution, request.leverage);
     account.updateMarkPrice(symbol, market.getMidPrice());
 
     const result: SimulatedOrderResult = { ...execution, symbol, side: request.side, type: request.type };
@@ -289,5 +304,66 @@ export class ExchangeSimulator {
       side: "buy",
       type: "market",
     };
+  }
+
+  private async refreshFundingRates(now: number, force: boolean) {
+    const elapsed = now - this.lastFundingFetch;
+    if (!force && elapsed < this.options.fundingRefreshIntervalMs) {
+      return;
+    }
+
+    try {
+      const response = await this.fundingApi.fundingRates();
+      if (typeof response.code === "number" && response.code !== 0) {
+        console.warn(`[Simulator] Funding rate response returned code ${response.code}`);
+      }
+
+      if (!response.fundingRates) {
+        return;
+      }
+
+      for (const entry of response.fundingRates) {
+        const normalizedSymbol = normalizeSymbol(entry.symbol);
+        if (!Number.isFinite(entry.rate)) {
+          continue;
+        }
+        this.fundingRates.set(normalizedSymbol, entry.rate);
+      }
+
+      this.lastFundingFetch = now;
+    } catch (error) {
+      console.error("[Simulator] Failed to refresh funding rates", error);
+    }
+  }
+
+  private calculateFundingIncrement(symbol: string, now: number): number | undefined {
+    const rate = this.fundingRates.get(symbol);
+    if (rate === undefined) {
+      return undefined;
+    }
+
+    const periodMs = this.options.fundingPeriodHours * 60 * 60 * 1000;
+    if (!Number.isFinite(periodMs) || periodMs <= 0) {
+      return undefined;
+    }
+
+    const last = this.lastFundingApplied.get(symbol);
+    this.lastFundingApplied.set(symbol, now);
+
+    if (!last) {
+      return 0;
+    }
+
+    const elapsed = now - last;
+    if (elapsed <= 0) {
+      return 0;
+    }
+
+    const fraction = elapsed / periodMs;
+    if (!Number.isFinite(fraction) || fraction <= 0) {
+      return 0;
+    }
+
+    return rate * fraction;
   }
 }

@@ -12,10 +12,18 @@ export interface PositionRequest {
     symbol: string;
     side: "LONG" | "SHORT" | "HOLD";
     quantity: number;
+    leverage: number | null;
+    profitTarget: number | null;
+    stopLoss: number | null;
+    invalidationCondition: string | null;
+    confidence: number | null;
 }
 
 export interface PositionResult {
     symbol: string;
+    side: "LONG" | "SHORT" | "HOLD";
+    quantity: number;
+    leverage: number | null;
     success: boolean;
     error?: string;
 }
@@ -30,33 +38,38 @@ export async function createPosition(account: Account, positions: PositionReques
     const accountId = account.id || "default";
         const results: PositionResult[] = [];
 
-        for (const { symbol, side, quantity } of positions) {
+        for (const { symbol, side, quantity, leverage } of positions) {
             if (side === "HOLD") {
-                results.push({ symbol, success: false, error: "HOLD action - no position created" });
+                results.push({ symbol, side, quantity, leverage, success: true });
                 continue;
             }
 
             const orderSide: OrderSide = side === "LONG" ? "buy" : "sell";
+            const orderQuantity = Math.abs(quantity);
             try {
                 const execution = await simulator.placeOrder({
                     symbol,
                     side: orderSide,
-                    quantity,
+                    quantity: orderQuantity,
                     type: "market",
+                    leverage: leverage ?? undefined,
                 }, accountId);
 
                 if (execution.status === "rejected" || execution.totalQuantity === 0) {
                     results.push({
                         symbol,
+                        side,
+                        quantity,
+                        leverage,
                         success: false,
                         error: execution.reason ?? "Order rejected",
                     });
                 } else {
-                    results.push({ symbol, success: true });
+                    results.push({ symbol, side, quantity, leverage, success: true });
                 }
             } catch (error) {
                 const message = error instanceof Error ? error.message : "Unknown error";
-                results.push({ symbol, success: false, error: message });
+                results.push({ symbol, side, quantity, leverage, success: false, error: message });
             }
         }
 
@@ -81,18 +94,18 @@ export async function createPosition(account: Account, positions: PositionReques
     const results: PositionResult[] = [];
 
     // Process positions sequentially to maintain nonce ordering
-    for (const { symbol, side, quantity } of positions) {
+    for (const { symbol, side, quantity, leverage } of positions) {
         try {
             const market = MARKETS[symbol as keyof typeof MARKETS];
             if (!market) {
                 console.warn(`Market for symbol ${symbol} not found, skipping`);
-                results.push({ symbol, success: false, error: "Market not found" });
+                results.push({ symbol, side, quantity, leverage, success: false, error: "Market not found" });
                 continue;
             }
 
             if (side === "HOLD") {
                 console.log(`Side is HOLD for ${symbol}, skipping`);
-                results.push({ symbol, success: false, error: "HOLD action - no position created" });
+                results.push({ symbol, side, quantity, leverage, success: true });
                 continue;
             }
 
@@ -100,16 +113,18 @@ export async function createPosition(account: Account, positions: PositionReques
             const latestPrice = candleStickData?.candlesticks?.[candleStickData.candlesticks.length - 1]?.close;
             if (!latestPrice) {
                 console.warn(`No latest price found for ${symbol}, skipping`);
-                results.push({ symbol, success: false, error: "No latest price available" });
+                results.push({ symbol, side, quantity, leverage, success: false, error: "No latest price available" });
                 continue;
             }
 
+            const directionIsLong = side === "LONG";
+            const orderQuantity = Math.abs(quantity);
             const response = await client.createOrder({
                 marketIndex: market.marketId,
                 clientOrderIndex: market.clientOrderIndex,
-                baseAmount: Math.round(quantity * market.qtyDecimals),
-                price: Math.round((side == "LONG" ? latestPrice * 1.01 : latestPrice * 0.99) * market.priceDecimals),
-                isAsk: side == "LONG" ? false : true,
+                baseAmount: Math.round(orderQuantity * market.qtyDecimals),
+                price: Math.round((directionIsLong ? latestPrice * 1.01 : latestPrice * 0.99) * market.priceDecimals),
+                isAsk: directionIsLong ? false : true,
                 orderType: SignerClient.ORDER_TYPE_MARKET,
                 timeInForce: SignerClient.ORDER_TIME_IN_FORCE_IMMEDIATE_OR_CANCEL,
                 reduceOnly: 0,
@@ -117,11 +132,11 @@ export async function createPosition(account: Account, positions: PositionReques
                 orderExpiry: SignerClient.DEFAULT_IOC_EXPIRY,
             });
             console.log(`Position created for ${symbol}:`, response);
-            results.push({ symbol, success: true });
+            results.push({ symbol, side, quantity, leverage, success: true });
         } catch (err) {
             const errorMsg = err instanceof Error ? err.message : String(err);
             console.error(`Failed to create position for ${symbol}:`, err);
-            results.push({ symbol, success: false, error: errorMsg });
+            results.push({ symbol, side, quantity, leverage, success: false, error: errorMsg });
             // continue with next position
         }
     }

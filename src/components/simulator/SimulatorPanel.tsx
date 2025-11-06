@@ -347,7 +347,8 @@ export default function SimulatorPanel() {
   const accountMetrics = useMemo(() => {
     if (!account) return [];
 
-    const available = Math.max(account.availableCash ?? account.cashBalance, 0);
+    const rawAvailable = account.availableCash ?? account.cashBalance;
+    const available = Math.max(Math.min(rawAvailable ?? 0, account.equity ?? 0), 0);
     const borrowed = Math.max(account.borrowedBalance ?? Math.max(-account.cashBalance, 0), 0);
 
     const metrics = [
