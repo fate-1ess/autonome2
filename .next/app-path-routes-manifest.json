@@ -1,0 +1,21 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/ai/page": "/ai",
+  "/api/ai/route": "/api/ai",
+  "/api/chat/route": "/api/chat",
+  "/api/crypto-prices/route": "/api/crypto-prices",
+  "/api/init-schedulers/route": "/api/init-schedulers",
+  "/api/invocations/route": "/api/invocations",
+  "/api/models/route": "/api/models",
+  "/api/portfolio-history/route": "/api/portfolio-history",
+  "/api/positions/route": "/api/positions",
+  "/api/sim/account/route": "/api/sim/account",
+  "/api/sim/order/route": "/api/sim/order",
+  "/api/sim/orderbook/route": "/api/sim/orderbook",
+  "/api/sim/stream/route": "/api/sim/stream",
+  "/api/trades/route": "/api/trades",
+  "/favicon.ico/route": "/favicon.ico",
+  "/page": "/",
+  "/simulator/page": "/simulator"
+}

@@ -1,0 +1,165 @@
+{
+  "version": 3,
+  "pages404": true,
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/ai",
+      "regex": "^/ai(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/ai(?:/)?$"
+    },
+    {
+      "page": "/api/ai",
+      "regex": "^/api/ai(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/ai(?:/)?$"
+    },
+    {
+      "page": "/api/chat",
+      "regex": "^/api/chat(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/chat(?:/)?$"
+    },
+    {
+      "page": "/api/crypto-prices",
+      "regex": "^/api/crypto\\-prices(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/crypto\\-prices(?:/)?$"
+    },
+    {
+      "page": "/api/init-schedulers",
+      "regex": "^/api/init\\-schedulers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/init\\-schedulers(?:/)?$"
+    },
+    {
+      "page": "/api/invocations",
+      "regex": "^/api/invocations(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/invocations(?:/)?$"
+    },
+    {
+      "page": "/api/models",
+      "regex": "^/api/models(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/models(?:/)?$"
+    },
+    {
+      "page": "/api/portfolio-history",
+      "regex": "^/api/portfolio\\-history(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/portfolio\\-history(?:/)?$"
+    },
+    {
+      "page": "/api/positions",
+      "regex": "^/api/positions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/positions(?:/)?$"
+    },
+    {
+      "page": "/api/sim/account",
+      "regex": "^/api/sim/account(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/sim/account(?:/)?$"
+    },
+    {
+      "page": "/api/sim/order",
+      "regex": "^/api/sim/order(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/sim/order(?:/)?$"
+    },
+    {
+      "page": "/api/sim/orderbook",
+      "regex": "^/api/sim/orderbook(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/sim/orderbook(?:/)?$"
+    },
+    {
+      "page": "/api/sim/stream",
+      "regex": "^/api/sim/stream(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/sim/stream(?:/)?$"
+    },
+    {
+      "page": "/api/trades",
+      "regex": "^/api/trades(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/trades(?:/)?$"
+    },
+    {
+      "page": "/favicon.ico",
+      "regex": "^/favicon\\.ico(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/favicon\\.ico(?:/)?$"
+    },
+    {
+      "page": "/simulator",
+      "regex": "^/simulator(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/simulator(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSuffix": ".prefetch.rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": true,
+    "dynamicRSCPrerender": true
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  },
+  "ppr": {
+    "chain": {
+      "headers": {
+        "next-resume": "1"
+      }
+    }
+  }
+}

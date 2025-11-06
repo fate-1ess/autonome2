@@ -1,0 +1,7 @@
+{
+  "headers": {
+    "content-type": "application/json;charset=utf-8",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/api/layout,_N_T_/api/portfolio-history/layout,_N_T_/api/portfolio-history/route,_N_T_/api/portfolio-history,portfolio-history"
+  },
+  "status": 200
+}

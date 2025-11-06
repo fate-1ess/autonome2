@@ -1,0 +1,11 @@
+var R=require("../../../chunks/[turbopack]_runtime.js")("server/app/api/trades/route.js")
+R.c("server/chunks/node_modules_next_dist_esm_3cad0a3d._.js")
+R.c("server/chunks/node_modules_next_dist_compiled_57d26369._.js")
+R.c("server/chunks/node_modules_next_dist_server_57e3ca8e._.js")
+R.c("server/chunks/node_modules_next_dist_f14d9aaa._.js")
+R.c("server/chunks/node_modules_next_a211fe45._.js")
+R.c("server/chunks/node_modules_@opentelemetry_api_build_esm_7e8f41ca._.js")
+R.c("server/chunks/[root-of-the-server]__99e5ae03._.js")
+R.c("server/chunks/_next-internal_server_app_api_trades_route_actions_8c92768e.js")
+R.m("[project]/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/src/app/api/trades/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)")
+module.exports=R.m("[project]/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/src/app/api/trades/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)").exports
