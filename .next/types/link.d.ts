@@ -38,6 +38,7 @@ declare namespace __next_route_internal_types__ {
     | `/api/chat`
     | `/api/crypto-prices`
     | `/api/init-schedulers`
+    | `/api/internal/revalidate`
     | `/api/invocations`
     | `/api/models`
     | `/api/portfolio-history`

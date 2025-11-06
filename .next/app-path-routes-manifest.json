@@ -6,6 +6,7 @@
   "/api/chat/route": "/api/chat",
   "/api/crypto-prices/route": "/api/crypto-prices",
   "/api/init-schedulers/route": "/api/init-schedulers",
+  "/api/internal/revalidate/route": "/api/internal/revalidate",
   "/api/invocations/route": "/api/invocations",
   "/api/models/route": "/api/models",
   "/api/portfolio-history/route": "/api/portfolio-history",

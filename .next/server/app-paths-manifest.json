@@ -6,6 +6,7 @@
   "/api/chat/route": "app/api/chat/route.js",
   "/api/crypto-prices/route": "app/api/crypto-prices/route.js",
   "/api/init-schedulers/route": "app/api/init-schedulers/route.js",
+  "/api/internal/revalidate/route": "app/api/internal/revalidate/route.js",
   "/api/invocations/route": "app/api/invocations/route.js",
   "/api/models/route": "app/api/models/route.js",
   "/api/portfolio-history/route": "app/api/portfolio-history/route.js",

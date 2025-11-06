@@ -70,6 +70,12 @@
       "namedRegex": "^/api/init\\-schedulers(?:/)?$"
     },
     {
+      "page": "/api/internal/revalidate",
+      "regex": "^/api/internal/revalidate(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/internal/revalidate(?:/)?$"
+    },
+    {
       "page": "/api/invocations",
       "regex": "^/api/invocations(?:/)?$",
       "routeKeys": {},
