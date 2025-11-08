@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import NumberFlow from "@number-flow/react";
-import { getModelInfo } from "@/lib/modelConfig";
-import { formatCurrencyValue } from "@/lib/formatters";
+import { getModelInfo } from "@/shared/models/modelConfig";
+import { formatCurrencyValue } from "@/shared/formatting/numberFormat";
 import type { ChartConfig } from "@/components/ui/chart";
 
 type ModelLegendProps = {
@@ -71,11 +71,15 @@ export default function ModelLegend({
   }, [modelKeys, seriesMeta]);
 
   const formatValue = (v?: number): string => {
-    if (typeof v !== "number") {
+    if (typeof v !== "number" || Number.isNaN(v)) {
       return "";
     }
     if (isPercent) {
-      return `${Math.round(v)}%`;
+      return new Intl.NumberFormat("en-US", {
+        style: "percent",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(v);
     }
     const currencyLabel = formatCurrencyValue(v);
     return currencyLabel === "N/A" ? "" : currencyLabel;
@@ -104,7 +108,11 @@ export default function ModelLegend({
           const logo = modelInfo?.logo;
           const value =
             typeof lastPoint[key] === "number"
-              ? (lastPoint[key] as number)
+              ? Number(lastPoint[key])
+              : undefined;
+          const displayValue =
+            typeof value === "number"
+              ? (isPercent ? value / 100 : value)
               : undefined;
           const isHovered = hoveredLine === key;
           const isDimmed = hoveredLine && hoveredLine !== key;
@@ -155,9 +163,9 @@ export default function ModelLegend({
                 <span className="font-medium">{label}</span>
               </div>
               <div className="mt-1 text-xs tabular-nums text-muted-foreground" style={{ opacity: isDimmed ? 0.4 : 1 }}>
-                {typeof value === "number" && !isPercent ? (
+                {typeof displayValue === "number" && !isPercent ? (
                   <NumberFlow
-                    value={value}
+                    value={displayValue}
                     format={{
                       style: "currency",
                       currency: "USD",
@@ -165,18 +173,17 @@ export default function ModelLegend({
                       maximumFractionDigits: 2,
                     }}
                   />
-                ) : typeof value === "number" && isPercent ? (
+                ) : typeof displayValue === "number" && isPercent ? (
                   <NumberFlow
-                    value={value}
+                    value={displayValue}
                     format={{
                       style: "percent",
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0,
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
                     }}
-                    transformValue={(v) => v / 100}
                   />
                 ) : (
-                  <span>{formatValue(value)}</span>
+                  <span>{formatValue(displayValue)}</span>
                 )}
               </div>
             </div>

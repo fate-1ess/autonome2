@@ -10,7 +10,7 @@ generator client {
   // Generate into node_modules/.prisma so @prisma/client imports are forwarded correctly
   output   = "../node_modules/.prisma/client"
   // Use Node runtime for Next.js server builds
-  runtime = "node"
+  runtime = "node"                                        
 }
 
 datasource db {

@@ -12,7 +12,7 @@
 /coverage
 
 # Build outputs
-# /.next/
+/.next/
 /out/
 /build/
 /dist/

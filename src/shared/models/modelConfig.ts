@@ -4,6 +4,21 @@ export const MODEL_INFO: Record<string, { logo: string; color: string; label: st
     color: "#4D6BFE",
     label: "DeepSeek V3.1 Terminus",
   },
+  "deepseek-v3.1": {
+    logo: "https://nof1.ai/logos_white/deepseek_logo.png",
+    color: "#4D6BFE",
+    label: "DeepSeek V3.1",
+  },
+  "deepseek-r1t2-chimera": {
+    logo: "https://nof1.ai/logos_white/deepseek_logo.png",
+    color: "#4D6BFE",
+    label: "DeepSeek R1T2 Chimera",
+  },
+  "deepseek-r1-0528": {
+    logo: "https://nof1.ai/logos_white/deepseek_logo.png",
+    color: "#4D6BFE",
+    label: "DeepSeek R1 0528",
+  },
   "claude-sonnet-4.5": {
     logo: "https://nof1.ai/logos_white/Claude_logo.png",
     color: "#FF6B35",
@@ -19,6 +34,11 @@ export const MODEL_INFO: Record<string, { logo: string; color: string; label: st
     color: "#8B5CF6",
     label: "Qwen3 Max",
   },
+  "qwen3-235b-a22b": {
+    logo: "https://nof1.ai/logos_white/qwen_logo.png",
+    color: "#8B5CF6",
+    label: "Qwen3 235B A22B",
+  },
   "glm-4.5-air": {
     logo: "/glm.svg",
     color: "#343333",
@@ -28,6 +48,11 @@ export const MODEL_INFO: Record<string, { logo: string; color: string; label: st
     logo: "/minimax.png",
     color: "#E62176",
     label: "Minimax M2",
+  },
+  "polaris-alpha": {
+    logo: "https://nof1.ai/logos_white/GPT_logo.png",
+    color: "#00C2FF",
+    label: "Polaris Alpha",
   },
 };
 

@@ -5,7 +5,7 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getModelInfo } from "@/lib/modelConfig";
+import { getModelInfo } from "@/shared/models/modelConfig";
 import type { Conversation } from "./types";
 import {
   extractMarkdownPreview,
@@ -59,9 +59,9 @@ export function ModelChatTab({ conversations, loading, filterMenu }: ModelChatTa
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {filterMenu}
-      <ScrollArea className="flex-1 overflow-auto">
+      <ScrollArea className="flex-1 min-h-0 overflow-auto">
         {loading ? (
           <ModelChatSkeleton />
         ) : conversations.length === 0 ? (

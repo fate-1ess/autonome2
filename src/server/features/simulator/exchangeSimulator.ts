@@ -147,13 +147,14 @@ export class ExchangeSimulator {
     return account;
   }
 
-  private emitAccountSnapshot(accountId: string) {
+  private emitAccountSnapshot(accountId: string, snapshotOverride?: AccountSnapshot) {
     const account = this.accounts.get(accountId);
     if (!account) {
       return;
     }
 
-    this.emitter.emit("account", { type: "account", payload: { accountId, snapshot: account.getSnapshot() } } as MarketEvent);
+    const snapshot = snapshotOverride ?? account.getSnapshot();
+    this.emitter.emit("account", { type: "account", payload: { accountId, snapshot } } as MarketEvent);
   }
 
   private async initialise() {
@@ -234,6 +235,8 @@ export class ExchangeSimulator {
     const book = market.getSnapshot();
     const execution = matchOrder(book, request, this.options, this.rng);
     const account = this.getOrCreateAccount(accountId);
+    const snapshotBefore = account.getSnapshot();
+    const beforePosition = snapshotBefore.positions.find((pos) => normalizeSymbol(pos.symbol) === symbol);
 
     if (execution.status === "rejected" || execution.totalQuantity === 0) {
       return { ...execution, symbol, side: request.side, type: request.type };
@@ -256,13 +259,36 @@ export class ExchangeSimulator {
     account.applyExecution(symbol, request.side, execution, request.leverage);
     account.updateMarkPrice(symbol, market.getMidPrice());
 
+    const snapshotAfter = account.getSnapshot();
+    const afterPosition = snapshotAfter.positions.find((pos) => normalizeSymbol(pos.symbol) === symbol);
+    const realizedDelta = snapshotAfter.totalRealizedPnl - snapshotBefore.totalRealizedPnl;
+    const leverageApplied = beforePosition?.leverage ?? afterPosition?.leverage ?? (typeof request.leverage === "number" ? request.leverage : null);
+    const completed = Boolean(beforePosition && (!afterPosition || afterPosition.quantity === 0));
+    const direction = beforePosition?.side ?? (request.side === "buy" ? "LONG" : "SHORT");
+    const notional = Math.abs(execution.totalQuantity * execution.averagePrice);
+    const confidence = typeof request.confidence === "number" && Number.isFinite(request.confidence)
+      ? request.confidence
+      : null;
+
     const result: SimulatedOrderResult = { ...execution, symbol, side: request.side, type: request.type };
 
     this.emitter.emit("trade", {
       type: "trade",
-      payload: { accountId, symbol, result, timestamp: Date.now() },
+      payload: {
+        accountId,
+        symbol,
+        result,
+        timestamp: Date.now(),
+        realizedPnl: realizedDelta,
+        notional,
+        leverage: leverageApplied ?? null,
+        confidence,
+        direction,
+        completed,
+        accountValue: snapshotAfter.equity,
+      },
     } as MarketEvent);
-    this.emitAccountSnapshot(accountId);
+    this.emitAccountSnapshot(accountId, snapshotAfter);
 
     return result;
   }

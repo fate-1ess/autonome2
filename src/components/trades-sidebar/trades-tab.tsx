@@ -1,8 +1,8 @@
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getModelInfo } from "@/lib/modelConfig";
-import { formatCurrency } from "@/lib/formatters";
+import { getModelInfo } from "@/shared/models/modelConfig";
+import { formatCurrency } from "@/shared/formatting/numberFormat";
 import type { Trade } from "./types";
 import { computeHoldingLabel, formatTimestamp } from "./utils";
 import { TradesListSkeleton } from "./loading-skeletons";
@@ -15,9 +15,9 @@ type TradesTabProps = {
 
 export function TradesTab({ trades, loading, filterMenu }: TradesTabProps) {
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {filterMenu}
-      <ScrollArea className="flex-1 overflow-auto">
+      <ScrollArea className="flex-1 min-h-0 overflow-auto">
         {loading ? (
           <TradesListSkeleton />
         ) : trades.length === 0 ? (

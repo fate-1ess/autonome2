@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { GlowingLineChart } from "./ui/glowing-line";
 import ModelLegend from "./model-legend";
-import { getModelInfo } from "@/lib/modelConfig";
+import { getModelInfo } from "@/shared/models/modelConfig";
 import { usePollingFetch } from "@/hooks/usePollingFetch";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ChartConfig } from "@/components/ui/chart";

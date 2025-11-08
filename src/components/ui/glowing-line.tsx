@@ -1,6 +1,7 @@
 "use client";
 
 import { TrendingUp } from "lucide-react";
+import NumberFlow from "@number-flow/react";
 import { useEffect, useMemo, useState } from "react";
 import {
   CartesianGrid,
@@ -15,10 +16,23 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
-import { getModelInfo } from "@/lib/modelConfig";
+import { getModelInfo } from "@/shared/models/modelConfig";
 
 type ChartDatum = { month: string; [key: string]: number | string | null | undefined };
 type SeriesMeta = Record<string, { originalKey: string }>;
+
+const FLOW_FORMAT_CURRENCY = {
+  style: "currency" as const,
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+};
+
+const FLOW_FORMAT_PERCENT = {
+  style: "percent" as const,
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+};
 
 type GlowingLineChartProps = {
   chartData: ChartDatum[];
@@ -86,14 +100,8 @@ const CustomEndDot = ({
     .charAt(0)
     .toUpperCase() || "•";
 
-  const formattedValue =
-    valueMode === "percent"
-      ? `${value.toFixed(1)}%`
-      : new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: "USD",
-          maximumFractionDigits: 2,
-        }).format(value);
+  const numberFlowValue = valueMode === "percent" ? value / 100 : value;
+  const numberFlowFormat = valueMode === "percent" ? FLOW_FORMAT_PERCENT : FLOW_FORMAT_CURRENCY;
 
   return (
     <g>
@@ -134,8 +142,8 @@ const CustomEndDot = ({
       <foreignObject
         x={cx + 25}
         y={cy - 12}
-        width={100}
-        height={24}
+        width={130}
+        height={26}
         opacity={isDimmed ? 0.3 : 1}
       >
         <div
@@ -150,7 +158,7 @@ const CustomEndDot = ({
             border: isHovered ? "2px solid white" : "none",
           }}
         >
-          {formattedValue}
+          <NumberFlow value={numberFlowValue} format={numberFlowFormat} />
         </div>
       </foreignObject>
     </g>
@@ -456,9 +464,13 @@ export function GlowingLineChart({
                   animationDuration={300}
                   animationEasing="ease-in-out"
                   filter={isHovered ? `drop-shadow(0 0 8px ${color})` : undefined}
-                  dot={(dotProps) => (
+                  dot={({ key: _dotKey, cx, cy, value: pointValue, dataKey, index }) => (
                     <CustomEndDot
-                      {...dotProps}
+                      cx={cx}
+                      cy={cy}
+                      value={pointValue}
+                      dataKey={dataKey}
+                      index={index}
                       hoveredLine={hoveredLine}
                       seriesMeta={seriesMeta}
                       valueMode={valueMode}

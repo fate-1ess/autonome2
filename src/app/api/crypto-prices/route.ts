@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { CandlestickApi, IsomorphicFetchHttpLibrary, ServerConfiguration } from "../../../../lighter-sdk-ts/generated";
-import { BASE_URL, DEFAULT_SIMULATOR_OPTIONS, IS_SIMULATION_ENABLED } from "@/lib/config";
-import { MARKETS } from "@/lib/markets";
-import { ExchangeSimulator } from "@/lib/simulator/exchangeSimulator";
-import { normalizeNumber, parseSymbols } from "@/lib/formatters";
+import { BASE_URL, DEFAULT_SIMULATOR_OPTIONS, IS_SIMULATION_ENABLED } from "@/server/config/env";
+import { MARKETS } from "@/shared/markets/marketMetadata";
+import { ExchangeSimulator } from "@/server/features/simulator/exchangeSimulator";
+import { normalizeNumber, parseSymbols } from "@/shared/formatting/numberFormat";
 
 const candlestickApi = new CandlestickApi({
   baseServer: new ServerConfiguration<{ }>(BASE_URL, { }),

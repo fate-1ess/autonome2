@@ -37,7 +37,7 @@ export async function createPosition(account: Account, positions: PositionReques
     const accountId = account.id || "default";
     const results: PositionResult[] = [];
 
-    for (const { symbol, side, quantity, leverage } of positions) {
+    for (const { symbol, side, quantity, leverage, confidence } of positions) {
       if (side === "HOLD") {
         results.push({ symbol, side, quantity, leverage, success: true });
         continue;
@@ -53,6 +53,7 @@ export async function createPosition(account: Account, positions: PositionReques
             quantity: orderQuantity,
             type: "market",
             leverage: leverage ?? undefined,
+            confidence: confidence ?? undefined,
           },
           accountId,
         );

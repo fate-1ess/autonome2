@@ -1,8 +1,8 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { NextResponse } from "next/server";
-import { MODEL_INFO } from "@/lib/modelConfig";
+import { MODEL_INFO } from "@/shared/models/modelConfig";
 import { prisma } from "@server/db/prisma";
-import { DATA_CACHE_TAGS } from "@/lib/cache/tags";
+import { DATA_CACHE_TAGS } from "@/server/cache/dataTags";
 
 async function loadModels() {
   'use cache';

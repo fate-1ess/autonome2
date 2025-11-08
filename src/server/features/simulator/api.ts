@@ -46,6 +46,8 @@ export async function handleSimOrder(request: NextRequest) {
           : undefined;
     const rawLeverage = body.leverage !== undefined ? Number(body.leverage) : undefined;
     const leverage = Number.isFinite(rawLeverage) && rawLeverage !== null && rawLeverage > 0 ? rawLeverage : undefined;
+    const rawConfidence = body.confidence !== undefined ? Number(body.confidence) : undefined;
+    const confidence = Number.isFinite(rawConfidence) ? rawConfidence : null;
 
     if (!symbol) {
       throw new Error("Symbol is required");
@@ -67,6 +69,7 @@ export async function handleSimOrder(request: NextRequest) {
         type: orderType,
         limitPrice,
         leverage,
+        confidence,
       },
       accountId,
     );

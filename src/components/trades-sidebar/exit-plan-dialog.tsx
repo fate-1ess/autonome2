@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { formatConfidenceValue, formatPriceLabel } from "@/lib/formatters";
+import { formatConfidenceValue, formatPriceLabel } from "@/shared/formatting/numberFormat";
 import type { ExitPlanSelection } from "./types";
 
 type ExitPlanDialogProps = {

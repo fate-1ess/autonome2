@@ -3,7 +3,7 @@
 import React, { useMemo, useRef } from "react";
 import Image from "next/image";
 import NumberFlow, { useCanAnimate } from "@number-flow/react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/utils/classNames";
 import { usePollingFetch } from "@/hooks/usePollingFetch";
 import { Skeleton } from "@/components/ui/skeleton";
 

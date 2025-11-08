@@ -1,12 +1,12 @@
 import Image from "next/image";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getModelInfo } from "@/lib/modelConfig";
+import { getModelInfo } from "@/shared/models/modelConfig";
 import {
   formatCurrencyValue,
   formatLeverageValue,
   formatSignedCurrencyValue,
   normalizeNumber,
-} from "@/lib/formatters";
+} from "@/shared/formatting/numberFormat";
 import type { ExitPlanSelection, ModelPositions } from "./types";
 import { PositionsListSkeleton } from "./loading-skeletons";
 
@@ -19,9 +19,9 @@ type PositionsTabProps = {
 
 export function PositionsTab({ positions, loading, filterMenu, onSelectExitPlan }: PositionsTabProps) {
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {filterMenu}
-      <ScrollArea className="flex-1 overflow-auto">
+      <ScrollArea className="flex-1 min-h-0 overflow-auto">
         {loading ? (
           <PositionsListSkeleton />
         ) : positions.length === 0 || positions.every((group) => group.positions.length === 0) ? (

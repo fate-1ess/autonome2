@@ -1,7 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { prisma } from "@server/db/prisma"; 
-import { DATA_CACHE_TAGS } from "@/lib/cache/tags";
+import { DATA_CACHE_TAGS } from "@/server/cache/dataTags";
 
 async function loadPortfolioHistory() {
   'use cache';

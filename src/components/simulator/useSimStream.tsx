@@ -1,10 +1,24 @@
 "use client"
 import { useEffect, useRef } from "react";
 
-export type MarketEvent = {
-  type: "book" | "trade" | "account";
-  payload: any;
+export type TradeEventPayload = {
+  accountId: string;
+  symbol: string;
+  result: unknown;
+  timestamp: number;
+  realizedPnl?: number;
+  notional?: number;
+  leverage?: number | null;
+  confidence?: number | null;
+  direction?: "LONG" | "SHORT";
+  completed?: boolean;
+  accountValue?: number;
 };
+
+export type MarketEvent =
+  | { type: "book"; payload: unknown }
+  | { type: "account"; payload: unknown }
+  | { type: "trade"; payload: TradeEventPayload };
 
 export default function useSimStream(
   onEvent: (ev: MarketEvent) => void,

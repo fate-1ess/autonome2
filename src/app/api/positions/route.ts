@@ -1,13 +1,13 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { ToolCallType } from "@prisma/client";
-import { getOpenPositions } from "@/lib/openPositions";
-import { getPortfolio } from "@/lib/getPortfolio";
-import { buildDecisionIndex } from "@/lib/tradingDecisions";
+import { getOpenPositions } from "@/server/features/trading/openPositions";
+import { getPortfolio } from "@/server/features/trading/getPortfolio";
+import { buildDecisionIndex } from "@/server/features/trading/tradingDecisions";
 import { prisma } from "@server/db/prisma";
-import { getArray, safeJsonParse } from "@/lib/utils/json";
-import { normalizeNumber } from "@/lib/formatters";
-import { DATA_CACHE_TAGS } from "@/lib/cache/tags";
+import { getArray, safeJsonParse } from "@/shared/utils/json";
+import { normalizeNumber } from "@/shared/formatting/numberFormat";
+import { DATA_CACHE_TAGS } from "@/server/cache/dataTags";
 
 async function loadPositions() {
   // 'use cache';

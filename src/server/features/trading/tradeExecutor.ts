@@ -1,6 +1,6 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { ToolCallType } from "../../../../generated/prisma/enums";
-import { generateText, tool } from "ai";
+import { generateText, stepCountIs, tool } from "ai";
 import z from "zod";
 import { prisma } from "@server/db/prisma";
 import type { Account } from "@server/features/trading/accounts";
@@ -374,6 +374,7 @@ export async function runTradeWorkflow(account: Account) {
   const result = await generateText({
     model: openrouter(account.modelName),
     prompt: enrichedPrompt,
+    stopWhen: stepCountIs(20),
     tools: {
       createPosition: tool({
         description: "Open one or more positions in the given markets",

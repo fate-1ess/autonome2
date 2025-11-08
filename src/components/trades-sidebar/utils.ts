@@ -1,4 +1,4 @@
-import { formatConfidenceValue, formatLeverageValue, formatPriceLabel, formatQuantityValue } from "@/lib/formatters";
+import { formatConfidenceValue, formatLeverageValue, formatPriceLabel, formatQuantityValue } from "@/shared/formatting/numberFormat";
 import type { Conversation, TradingDecisionCard } from "./types";
 
 export const extractMarkdownPreview = (markdown: string | undefined, limit = 220) => {

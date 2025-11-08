@@ -1,8 +1,14 @@
 {
+  "/ai/page": "app/ai/page.js",
   "/api/crypto-prices/route": "app/api/crypto-prices/route.js",
   "/api/invocations/route": "app/api/invocations/route.js",
+  "/api/models/route": "app/api/models/route.js",
   "/api/portfolio-history/route": "app/api/portfolio-history/route.js",
   "/api/positions/route": "app/api/positions/route.js",
+  "/api/sim/account/route": "app/api/sim/account/route.js",
+  "/api/sim/completed-trades/route": "app/api/sim/completed-trades/route.js",
+  "/api/sim/orderbook/route": "app/api/sim/orderbook/route.js",
   "/api/trades/route": "app/api/trades/route.js",
-  "/page": "app/page.js"
+  "/page": "app/page.js",
+  "/simulator/page": "app/simulator/page.js"
 }

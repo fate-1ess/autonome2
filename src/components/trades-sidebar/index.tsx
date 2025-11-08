@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { CustomEase } from "gsap/CustomEase";
-import { getModelInfo } from "@/lib/modelConfig";
+import { getModelInfo } from "@/shared/models/modelConfig";
 import { ExitPlanDialog } from "./exit-plan-dialog";
 import { ModelChatTab } from "./model-chat-tab";
 import { ModelFilterMenu } from "./model-filter-menu";
@@ -109,11 +109,12 @@ export default function TradesSidebar({ isExpanded }: TradesSidebarProps) {
   return (
     <div
       ref={sidebarRef}
-      className="flex h-full flex-col border-l bg-background"
+      className="flex h-full min-h-0 flex-col border-l bg-background"
       style={{
         position: "absolute",
         right: 0,
         top: 0,
+        bottom: 0,
         zIndex: 50,
         backgroundColor: "hsl(var(--background))",
       }}

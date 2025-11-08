@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { usePollingFetch } from "@/hooks/usePollingFetch";
-import { getModelInfo } from "@/lib/modelConfig";
-import { normalizeNumber } from "@/lib/formatters";
+import { getModelInfo } from "@/shared/models/modelConfig";
+import { normalizeNumber } from "@/shared/formatting/numberFormat";
 import type {
   Conversation,
   ModelOption,

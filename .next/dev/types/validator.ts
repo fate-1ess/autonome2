@@ -110,6 +110,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../../src/app/api/internal/revalidate/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/internal/revalidate">> = Specific
+  const handler = {} as typeof import("../../../src/app/api/internal/revalidate/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../src/app/api/invocations/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/invocations">> = Specific
@@ -150,6 +159,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/sim/account">> = Specific
   const handler = {} as typeof import("../../../src/app/api/sim/account/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/api/sim/completed-trades/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/sim/completed-trades">> = Specific
+  const handler = {} as typeof import("../../../src/app/api/sim/completed-trades/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

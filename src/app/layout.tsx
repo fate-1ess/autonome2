@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "@/components/providers";
-import "@/lib/tradeSchedulerBootstrap";
+import "@/server/schedulers/bootstrap";
 
 export const metadata: Metadata = {
 	title: "Autonome",

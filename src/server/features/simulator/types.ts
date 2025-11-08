@@ -81,7 +81,9 @@ export interface OrderExecution {
   reason?: string;
 }
 
-export interface SimulatedOrderRequest extends OrderMatchingInput {}
+export interface SimulatedOrderRequest extends OrderMatchingInput {
+  confidence?: number | null;
+}
 
 export interface SimulatedOrderResult extends OrderExecution {
   symbol: string;
@@ -132,6 +134,13 @@ export interface TradeEventPayload {
   symbol: string;
   result: SimulatedOrderResult;
   timestamp: number;
+  realizedPnl?: number;
+  notional?: number;
+  leverage?: number | null;
+  confidence?: number | null;
+  direction?: "LONG" | "SHORT";
+  completed?: boolean;
+  accountValue?: number;
 }
 
 export type MarketEvent =
